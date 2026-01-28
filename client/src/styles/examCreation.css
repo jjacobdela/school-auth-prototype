@@ -1,0 +1,357 @@
+.examPage {
+    min-height: 100vh;
+  }
+  
+  /* NAV BAR (dashboard-like) */
+  .examHeader {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: rgba(17, 26, 46, 0.95);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  
+  .navButton {
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
+  .navButton:hover {
+    filter: brightness(1.08);
+  }
+  
+  .navButton.primary {
+    background: var(--accent);
+    color: #0b1220;
+    border: none;
+  }
+  
+  .navButton.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* CONTENT */
+  .examContent {
+    display: grid;
+    place-items: center;
+    padding: 16px 12px 40px 12px;
+  }
+  
+  .examCard {
+    width: 100%;
+    max-width: 980px;
+    background: rgba(17, 26, 46, 0.85);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
+  }
+  
+  .examMetaGrid {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 0.6fr 0.9fr;
+    gap: 12px;
+    align-items: end;
+  }
+  
+  .examStats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.18);
+    height: 100%;
+  }
+  
+  .examStatItem {
+    display: grid;
+    gap: 4px;
+  }
+  
+  .examStatLabel {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  
+  .examStatValue {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  
+  .examDivider {
+    height: 1px;
+    background: var(--line);
+    margin: 18px 0;
+  }
+  
+  .questionToolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .questionToolbarLeft {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+    flex-wrap: wrap;
+  }
+  
+  .questionToolbarRight {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .emptyState {
+    margin-top: 18px;
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    background: rgba(0, 0, 0, 0.12);
+  }
+  
+  .emptyTitle {
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  
+  .emptyText {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  
+  .questionList {
+    margin-top: 16px;
+    display: grid;
+    gap: 14px;
+  }
+  
+  .questionCard {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.16);
+    transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  }
+  
+  .questionCard.dragOver {
+    border-color: rgba(110, 168, 254, 0.6);
+    box-shadow: 0 0 0 4px rgba(110, 168, 254, 0.12);
+  }
+  
+  .questionCard.dragging {
+    opacity: 0.7;
+    transform: scale(0.995);
+  }
+  
+  .questionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  
+  .questionHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .questionNumber {
+    font-weight: 800;
+  }
+  
+  .questionTypePill {
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.12);
+  }
+  
+  .dragHandle {
+    width: 34px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.14);
+    color: var(--muted);
+    cursor: grab;
+    user-select: none;
+  }
+  
+  .dragHandle:active {
+    cursor: grabbing;
+  }
+  
+  .textarea {
+    resize: vertical;
+    min-height: 70px;
+  }
+  
+  /* Better remove buttons */
+  .dangerButton {
+    border: 1px solid rgba(255, 107, 107, 0.35);
+    background: rgba(255, 107, 107, 0.12);
+    color: #ffd1d1;
+    padding: 10px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 800;
+  }
+  
+  .dangerButton:hover {
+    filter: brightness(1.08);
+  }
+  
+  .dangerButton:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  
+  .dangerButtonSmall {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+  
+  /* Multiple choice section */
+  .mcSection {
+    margin-top: 10px;
+    display: grid;
+    gap: 10px;
+  }
+  
+  .mcHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .mcTitle {
+    font-weight: 800;
+  }
+  
+  .mcAddChoiceBtn {
+    width: auto;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  
+  .mcChoices {
+    display: grid;
+    gap: 10px;
+  }
+  
+  .mcChoiceRow {
+    display: grid;
+    grid-template-columns: 120px 1fr 130px;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .mcRadio input[type="radio"] {
+    accent-color: #3ddc84; /* green */
+    gap: 8px;
+  }
+  
+  .mcRadioText {
+    color: var(--muted);
+  }
+  
+  .mcChoiceInput {
+    width: 100%;
+  }
+  
+  /* True/False */
+  .tfSection {
+    margin-top: 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.10);
+    display: grid;
+    gap: 10px;
+  }
+  
+  .tfLabel {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  
+  .tfButtons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .tfBtn {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 800;
+    min-width: 120px;
+  }
+  
+  .tfBtn.active {
+    background: #3ddc84;            /* green */
+    color: #062d1a;
+    border-color: #2fbf71;
+    box-shadow: 0 0 0 3px rgba(61, 220, 132, 0.25);
+  }
+  
+  /* Hint box */
+  .hintBox {
+    margin-top: 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.14);
+  }
+  
+  .hintTitle {
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  
+  .hintList {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+    font-size: 14px;
+    display: grid;
+    gap: 6px;
+  }
+  
+  @media (max-width: 900px) {
+    .examMetaGrid {
+      grid-template-columns: 1fr;
+    }
+  
+    .mcChoiceRow {
+      grid-template-columns: 1fr;
+    }
+  }
+  
