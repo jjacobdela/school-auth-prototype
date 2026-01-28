@@ -1,0 +1,60 @@
+.dashboardPage {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top navigation bar */
+.dashboardHeader {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1rem 2rem;
+    background-color: #1a1a1a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Navigation buttons */
+.navButton {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: rgba(255, 255, 255, 0.87);
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.6rem 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+    /* Hover highlight */
+    .navButton:hover {
+        background-color: rgba(100, 108, 255, 0.18);
+        color: #646cff;
+    }
+
+    /* Remove focus outline */
+    .navButton:focus,
+    .navButton:focus-visible {
+        outline: none;
+        box-shadow: none;
+    }
+
+/* Light mode support */
+@media (prefers-color-scheme: light) {
+    .dashboardHeader {
+        background-color: #ffffff;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .navButton {
+        color: #213547;
+    }
+
+        .navButton:hover {
+            background-color: rgba(100, 108, 255, 0.15);
+            color: #535bf2;
+        }
+}
