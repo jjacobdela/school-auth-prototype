@@ -330,36 +330,6 @@ export default function ExamCreation() {
 
           <div className="examDivider" />
 
-          <div className="questionToolbar">
-            <div className="questionToolbarLeft">
-              <label className="label">
-                New question type
-                <select className="input" value={newQuestionType} onChange={(e) => setNewQuestionType(e.target.value)}>
-                  {Object.entries(QUESTION_TYPES).map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <button className="button" type="button" onClick={addQuestion}>
-                Add Question
-              </button>
-            </div>
-
-            <div className="questionToolbarRight">
-              <button
-                className="button secondary"
-                type="button"
-                onClick={() => setQuestions([])}
-                disabled={questions.length === 0}
-              >
-                Clear Questions
-              </button>
-            </div>
-          </div>
-
           {questions.length === 0 ? (
             <div className="emptyState">
               <div className="emptyTitle">No questions yet</div>
@@ -495,6 +465,35 @@ export default function ExamCreation() {
                 </div>
               );
             })}
+            <div className="questionToolbar">
+            <div className="questionToolbarLeft">
+              <label className="label">
+                New question type
+                <select className="input" value={newQuestionType} onChange={(e) => setNewQuestionType(e.target.value)}>
+                  {Object.entries(QUESTION_TYPES).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button className="button" type="button" onClick={addQuestion}>
+                Add Question
+              </button>
+            </div>
+
+            <div className="questionToolbarRight">
+              <button
+                className="button secondary"
+                type="button"
+                onClick={() => setQuestions([])}
+                disabled={questions.length === 0}
+              >
+                Clear Questions
+              </button>
+            </div>
+          </div>
           </div>
 
           {!isValid ? (
