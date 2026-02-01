@@ -580,7 +580,6 @@ export default function ExamCreation() {
           <div className="topRow">
             <div className="pageTitleArea">
               <h1 className="pageTitle">Exam Creation</h1>
-              <p className="pageSubtitle">Clear-all drafts is now safely inside Drafts → Danger Zone.</p>
             </div>
 
             <div className="draftIndicator">
