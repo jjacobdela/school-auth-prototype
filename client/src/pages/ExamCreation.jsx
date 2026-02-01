@@ -120,6 +120,9 @@ export default function ExamCreation() {
   const [draftSort, setDraftSort] = useState("updated_desc"); // updated_desc | updated_asc | title_asc
   const [draftToDelete, setDraftToDelete] = useState(null);
 
+  // Danger confirmation (drawer)
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+
   // Drag & drop
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
@@ -220,6 +223,7 @@ export default function ExamCreation() {
   function toggleDrafts() {
     setDraftsOpen((v) => !v);
     setDraftToDelete(null);
+    setConfirmClearAll(false);
   }
 
   function saveDraft() {
@@ -275,6 +279,7 @@ export default function ExamCreation() {
     setCurrentDraftId(found.id);
     setDraftsOpen(false);
     setDraftToDelete(null);
+    setConfirmClearAll(false);
     alert("Draft loaded.");
   }
 
@@ -295,6 +300,7 @@ export default function ExamCreation() {
     writeDrafts([]);
     setCurrentDraftId(null);
     setDraftToDelete(null);
+    setConfirmClearAll(false);
     alert("All drafts cleared.");
   }
 
@@ -417,10 +423,6 @@ export default function ExamCreation() {
               Save Draft
             </button>
 
-            <button className="navButton" onClick={clearAllDrafts} disabled={drafts.length === 0}>
-              Clear Drafts
-            </button>
-
             <button
               className={`navButton primary ${!isValid ? "disabled" : ""}`}
               onClick={publishExam}
@@ -463,9 +465,7 @@ export default function ExamCreation() {
             <div className="drawerEmpty">
               <div className="drawerEmptyTitle">No drafts found</div>
               <div className="drawerEmptyText">
-                {drafts.length === 0
-                  ? "Click “Save Draft” to create your first draft."
-                  : "Try a different search term."}
+                {drafts.length === 0 ? "Click “Save Draft” to create your first draft." : "Try a different search term."}
               </div>
             </div>
           ) : (
@@ -499,7 +499,14 @@ export default function ExamCreation() {
                         Load
                       </button>
 
-                      <button className="navButton" type="button" onClick={() => setDraftToDelete(d.id)}>
+                      <button
+                        className="navButton"
+                        type="button"
+                        onClick={() => {
+                          setDraftToDelete(d.id);
+                          setConfirmClearAll(false);
+                        }}
+                      >
                         Delete…
                       </button>
                     </div>
@@ -522,6 +529,49 @@ export default function ExamCreation() {
               })}
             </div>
           )}
+
+          {/* Danger Zone: only global destructive action */}
+          <div className="drawerDangerZone">
+            <div className="drawerDangerTitle">Danger Zone</div>
+            <div className="drawerDangerText">
+              This permanently removes drafts from this browser’s storage.
+            </div>
+
+            <div className="dangerBlock">
+              <div className="dangerBlockInfo">
+                <div className="dangerBlockLabel">Clear all drafts</div>
+                <div className="dangerBlockHint">
+                  Removes every saved draft. Use only if you really need a reset.
+                </div>
+              </div>
+
+              {drafts.length === 0 ? (
+                <button className="navButton" type="button" disabled>
+                  No drafts
+                </button>
+              ) : !confirmClearAll ? (
+                <button
+                  className="navButton"
+                  type="button"
+                  onClick={() => {
+                    setConfirmClearAll(true);
+                    setDraftToDelete(null);
+                  }}
+                >
+                  Clear all…
+                </button>
+              ) : (
+                <div className="dangerInlineConfirm">
+                  <button className="dangerButton dangerButtonSmall" type="button" onClick={clearAllDrafts}>
+                    Clear all
+                  </button>
+                  <button className="navButton" type="button" onClick={() => setConfirmClearAll(false)}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -530,7 +580,7 @@ export default function ExamCreation() {
           <div className="topRow">
             <div className="pageTitleArea">
               <h1 className="pageTitle">Exam Creation</h1>
-              <p className="pageSubtitle">Drafts open in a right-side drawer with search, sort, and better actions.</p>
+              <p className="pageSubtitle">Clear-all drafts is now safely inside Drafts → Danger Zone.</p>
             </div>
 
             <div className="draftIndicator">
@@ -569,7 +619,13 @@ export default function ExamCreation() {
 
               <label className="label">
                 Duration (minutes)
-                <input type="number" className="input" min={1} value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
+                <input
+                  type="number"
+                  className="input"
+                  min={1}
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value)}
+                />
               </label>
 
               <div className="examStats">
