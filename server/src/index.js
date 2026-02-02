@@ -19,7 +19,7 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authRoutes);
 
-const port = process.env.PORT || 5002;
+const port = process.env.PORT || 5003;
 
 connectDB(process.env.MONGO_URI)
   .then(() => {

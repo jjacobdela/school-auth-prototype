@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/form.css";
 
 // 🔹 Example API calls (adjust to your backend)
-import { getModules, requestTraining } from "../api/training";
+import { getModules, requestTraining } from "../api/training"
 
 export default function RequestTraining() {
     const navigate = useNavigate();

@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5002/api";
+const API_BASE = "http://localhost:5003/api";
 
 export function getToken() {
   return localStorage.getItem("token");
@@ -20,7 +20,7 @@ export async function register({ fullName, email, password }) {
   });
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || "Registration failed");
+  if (!res.ok) throw new Error(data.message || "Registration failed"); 
   return data;
 }
 
