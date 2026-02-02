@@ -1,14 +1,11 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 function getTokenFromStorage() {
-  // IMPORTANT: Put your real token key FIRST here once you know it.
   const candidates = ["token", "authToken", "accessToken", "jwt", "login_token"];
-
   for (const key of candidates) {
     const v = localStorage.getItem(key);
     if (v && String(v).trim()) return String(v).trim();
   }
-
   return null;
 }
 
@@ -23,34 +20,64 @@ async function parseError(res) {
   return `Request failed (${res.status})`;
 }
 
-export async function createExam(payload) {
+async function request(path, options = {}) {
   const token = getTokenFromStorage();
-  if (!token) {
-    throw new Error("Missing auth token. Please log in again.");
-  }
+  if (!token) throw new Error("Missing auth token. Please log in again.");
 
-  // Try Bearer first (most common middleware expectation).
-  let res = await fetch(`${API_BASE}/api/exams`, {
-    method: "POST",
+  const url = `${API_BASE}${path}`;
+
+  // Try Bearer first
+  let res = await fetch(url, {
+    ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify(payload)
+    }
   });
 
-  // If backend expects raw token, retry once.
+  // If backend expects raw token, retry once
   if (res.status === 401 || res.status === 403) {
-    res = await fetch(`${API_BASE}/api/exams`, {
-      method: "POST",
+    res = await fetch(url, {
+      ...options,
       headers: {
-        "Content-Type": "application/json",
+        ...(options.headers || {}),
         Authorization: token
-      },
-      body: JSON.stringify(payload)
+      }
     });
   }
 
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
+}
+
+export async function createExam(payload) {
+  return request("/api/exams", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function listPublishedExams() {
+  return request("/api/exams?status=published", {
+    method: "GET"
+  });
+}
+
+export async function getExamById(id) {
+  return request(`/api/exams/${id}`, { method: "GET" });
+}
+
+export async function updateExamById(id, payload) {
+  return request(`/api/exams/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function deleteExamById(id) {
+  return request(`/api/exams/${id}`, {
+    method: "DELETE"
+  });
 }

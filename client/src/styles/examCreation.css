@@ -336,14 +336,15 @@
   
   /* Main content */
   .examContent {
-    display: grid;
-    place-items: center;
     padding: 18px 14px 48px 14px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
   
   .examCard {
     width: 100%;
-    max-width: 1040px;
+    max-width: 1400px; /* wider for desktop grid */
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
@@ -380,6 +381,7 @@
     margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid var(--line);
+    width: 100%;
   }
   
   .sectionHeader {
@@ -394,11 +396,14 @@
   .sectionTitle {
     font-weight: 950;
     font-size: 14px;
+    min-width: 220px;
   }
   
   .sectionHint {
     color: var(--muted);
     font-size: 12px;
+    max-width: 680px;
+    text-align: right;
   }
   
   .statusChip {
@@ -756,6 +761,66 @@
     gap: 6px;
   }
   
+  /* ================================
+     Published Exams (Mode 1) — Desktop Grid
+  ================================ */
+  
+  .publishedGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(360px, 1fr));
+    gap: 16px;
+    width: 100%;
+    margin-top: 12px;
+    align-items: start;
+  }
+  
+  @media (min-width: 1200px) {
+    .publishedGrid {
+      grid-template-columns: repeat(3, minmax(360px, 1fr));
+    }
+  }
+  
+  .publishedCard {
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+  }
+  
+  .publishedTop {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .publishedTitle {
+    font-weight: 800;
+    font-size: 18px;
+  }
+  
+  .publishedMeta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .publishedTime {
+    margin-top: 10px;
+    font-size: 13px;
+    opacity: 0.8;
+  }
+  
+  .publishedActions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  
+  /* Responsive adjustments */
   @media (max-width: 900px) {
     .examMetaGrid {
       grid-template-columns: 1fr;
@@ -767,6 +832,15 @@
   
     .appHeader {
       position: static;
+    }
+  
+    .publishedGrid {
+      grid-template-columns: 1fr;
+    }
+  
+    .sectionHint {
+      text-align: left;
+      max-width: 100%;
     }
   }
   
