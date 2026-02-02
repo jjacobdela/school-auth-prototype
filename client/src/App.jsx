@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import ExamCreation from "./pages/ExamCreation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RequestTraining from "./pages/RequestTraining"; 
 
@@ -24,6 +25,15 @@ export default function App() {
           />
           <Route path="/request-training" element={<RequestTraining />} />
 
+
+      <Route
+        path="/exam-creation"
+        element={
+          <ProtectedRoute>
+            <ExamCreation />
+          </ProtectedRoute>
+        }
+      />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

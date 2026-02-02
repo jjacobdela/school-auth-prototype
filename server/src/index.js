@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./db");
 const authRoutes = require("./routes/auth");
+const examRoutes = require("./routes/exams");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authRoutes);
+app.use("/api/exams", examRoutes);
 
 const port = process.env.PORT || 5003;
 
