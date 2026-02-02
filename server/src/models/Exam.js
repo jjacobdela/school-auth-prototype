@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const questionSchema = new mongoose.Schema(
   {
+    id: { type: String, trim: true }, // frontend uuid (optional but recommended)
+
     type: {
       type: String,
       required: true,

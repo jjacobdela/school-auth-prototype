@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { createExam } from "../api/exams";
 import "../styles/form.css";
 import "../styles/themes.css";
 import "../styles/examCreation.css";
@@ -122,6 +123,9 @@ export default function ExamCreation() {
 
   // Danger confirmation (drawer)
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+
+  // Publish loading
+  const [publishing, setPublishing] = useState(false);
 
   // Drag & drop
   const [draggingId, setDraggingId] = useState(null);
@@ -333,16 +337,30 @@ export default function ExamCreation() {
     alert("Draft link cleared. Saving will create a new draft.");
   }
 
-  function publishExam() {
+  async function publishExam() {
+    if (!isValid || publishing) return;
+
     const payload = {
       examTitle: examTitle.trim(),
       department: department.trim(),
       durationMinutes: Number(durationMinutes),
+      status: "published",
       questions
     };
 
-    console.log("Exam payload (frontend-only):", payload);
-    alert("Exam payload logged (backend to be added later).");
+    try {
+      setPublishing(true);
+      const result = await createExam(payload);
+
+      const examId = result?.exam?._id || result?.exam?.id || "unknown";
+      alert(`Published! Saved to MongoDB. (Exam ID: ${examId})`);
+
+      resetBuilderToNewDraft();
+    } catch (err) {
+      alert(err?.message || "Publish failed");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   // Drag handlers
@@ -452,12 +470,12 @@ export default function ExamCreation() {
             </button>
 
             <button
-              className={`navButton primary ${!isValid ? "disabled" : ""}`}
+              className={`navButton primary ${!isValid || publishing ? "disabled" : ""}`}
               onClick={publishExam}
-              disabled={!isValid}
-              title={!isValid ? "Complete required fields first" : "Publish (API later)"}
+              disabled={!isValid || publishing}
+              title={!isValid ? "Complete required fields first" : publishing ? "Publishing..." : "Publish"}
             >
-              Publish
+              {publishing ? "Publishing..." : "Publish"}
             </button>
           </div>
         </div>
@@ -699,7 +717,12 @@ export default function ExamCreation() {
               </div>
 
               <div className="questionToolbarRight">
-                <button className="navButton" type="button" onClick={() => setQuestions([])} disabled={questions.length === 0}>
+                <button
+                  className="navButton"
+                  type="button"
+                  onClick={() => setQuestions([])}
+                  disabled={questions.length === 0}
+                >
                   Clear Questions
                 </button>
               </div>
@@ -748,7 +771,12 @@ export default function ExamCreation() {
 
                     <label className="label">
                       Prompt
-                      <textarea className="input textarea" value={q.prompt} onChange={(e) => updateQuestion(q.id, { prompt: e.target.value })} rows={3} />
+                      <textarea
+                        className="input textarea"
+                        value={q.prompt}
+                        onChange={(e) => updateQuestion(q.id, { prompt: e.target.value })}
+                        rows={3}
+                      />
                     </label>
 
                     {q.type === "multiple_choice" ? (
@@ -764,13 +792,28 @@ export default function ExamCreation() {
                           {q.choices.map((choice, cIdx) => (
                             <div className="mcChoiceRow" key={`${q.id}-choice-${cIdx}`}>
                               <label className="mcRadio">
-                                <input type="radio" name={`correct-${q.id}`} checked={q.correctIndex === cIdx} onChange={() => updateQuestion(q.id, { correctIndex: cIdx })} />
+                                <input
+                                  type="radio"
+                                  name={`correct-${q.id}`}
+                                  checked={q.correctIndex === cIdx}
+                                  onChange={() => updateQuestion(q.id, { correctIndex: cIdx })}
+                                />
                                 <span className="mcRadioText">Correct</span>
                               </label>
 
-                              <input className="input mcChoiceInput" value={choice} onChange={(e) => updateChoice(q.id, cIdx, e.target.value)} placeholder={`Choice ${cIdx + 1}`} />
+                              <input
+                                className="input mcChoiceInput"
+                                value={choice}
+                                onChange={(e) => updateChoice(q.id, cIdx, e.target.value)}
+                                placeholder={`Choice ${cIdx + 1}`}
+                              />
 
-                              <button className="dangerButton dangerButtonSmall" type="button" onClick={() => removeChoice(q.id, cIdx)} disabled={q.choices.length <= 2}>
+                              <button
+                                className="dangerButton dangerButtonSmall"
+                                type="button"
+                                onClick={() => removeChoice(q.id, cIdx)}
+                                disabled={q.choices.length <= 2}
+                              >
                                 Remove
                               </button>
                             </div>
@@ -783,10 +826,18 @@ export default function ExamCreation() {
                       <div className="tfSection">
                         <div className="tfLabel">Correct answer</div>
                         <div className="tfButtons">
-                          <button type="button" className={`tfBtn ${q.correctBoolean ? "active" : ""}`} onClick={() => updateQuestion(q.id, { correctBoolean: true })}>
+                          <button
+                            type="button"
+                            className={`tfBtn ${q.correctBoolean ? "active" : ""}`}
+                            onClick={() => updateQuestion(q.id, { correctBoolean: true })}
+                          >
                             True
                           </button>
-                          <button type="button" className={`tfBtn ${!q.correctBoolean ? "active" : ""}`} onClick={() => updateQuestion(q.id, { correctBoolean: false })}>
+                          <button
+                            type="button"
+                            className={`tfBtn ${!q.correctBoolean ? "active" : ""}`}
+                            onClick={() => updateQuestion(q.id, { correctBoolean: false })}
+                          >
                             False
                           </button>
                         </div>
@@ -796,7 +847,12 @@ export default function ExamCreation() {
                     {q.type === "narrative" ? (
                       <label className="label">
                         Rubric / expected answer guide
-                        <textarea className="input textarea" value={q.rubric} onChange={(e) => updateQuestion(q.id, { rubric: e.target.value })} rows={3} />
+                        <textarea
+                          className="input textarea"
+                          value={q.rubric}
+                          onChange={(e) => updateQuestion(q.id, { rubric: e.target.value })}
+                          rows={3}
+                        />
                       </label>
                     ) : null}
                   </div>
