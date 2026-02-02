@@ -226,6 +226,30 @@ export default function ExamCreation() {
     setConfirmClearAll(false);
   }
 
+  function resetBuilderToNewDraft() {
+    const hasWork =
+      examTitle.trim().length > 0 ||
+      questions.length > 0 ||
+      String(durationMinutes).trim().length > 0;
+
+    const ok = !hasWork
+      ? true
+      : window.confirm("Start a new draft? Your current unsaved changes will be cleared.");
+
+    if (!ok) return;
+
+    setCurrentDraftId(null);
+    setExamTitle("");
+    setDepartment(DEPARTMENT_OPTIONS[0]);
+    setDurationMinutes(30);
+    setNewQuestionType("multiple_choice");
+    setQuestions([]);
+
+    setDraftsOpen(false);
+    setDraftToDelete(null);
+    setConfirmClearAll(false);
+  }
+
   function saveDraft() {
     const now = Date.now();
 
@@ -415,6 +439,10 @@ export default function ExamCreation() {
               Back
             </button>
 
+            <button className="navButton" onClick={resetBuilderToNewDraft}>
+              New Draft
+            </button>
+
             <button className="navButton" onClick={toggleDrafts}>
               Drafts
             </button>
@@ -465,7 +493,9 @@ export default function ExamCreation() {
             <div className="drawerEmpty">
               <div className="drawerEmptyTitle">No drafts found</div>
               <div className="drawerEmptyText">
-                {drafts.length === 0 ? "Click “Save Draft” to create your first draft." : "Try a different search term."}
+                {drafts.length === 0
+                  ? "Click “Save Draft” to create your first draft."
+                  : "Try a different search term."}
               </div>
             </div>
           ) : (
@@ -515,7 +545,11 @@ export default function ExamCreation() {
                       <div className="confirmRow">
                         <div className="confirmText">Delete this draft?</div>
                         <div className="confirmActions">
-                          <button className="dangerButton dangerButtonSmall" type="button" onClick={() => deleteDraftById(d.id)}>
+                          <button
+                            className="dangerButton dangerButtonSmall"
+                            type="button"
+                            onClick={() => deleteDraftById(d.id)}
+                          >
                             Delete
                           </button>
                           <button className="navButton" type="button" onClick={() => setDraftToDelete(null)}>
@@ -530,7 +564,6 @@ export default function ExamCreation() {
             </div>
           )}
 
-          {/* Danger Zone: only global destructive action */}
           <div className="drawerDangerZone">
             <div className="drawerDangerTitle">Danger Zone</div>
             <div className="drawerDangerText">
@@ -580,6 +613,7 @@ export default function ExamCreation() {
           <div className="topRow">
             <div className="pageTitleArea">
               <h1 className="pageTitle">Exam Creation</h1>
+              <p className="pageSubtitle">Use “New Draft” to start a fresh exam without leaving the page.</p>
             </div>
 
             <div className="draftIndicator">
