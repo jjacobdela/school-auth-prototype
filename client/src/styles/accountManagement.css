@@ -1,0 +1,269 @@
+.accountPage {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+  }
+  
+  /* Header (matching your exam builder header style) */
+  .accountHeader {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  
+  .accountHeaderLeft {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-width: 260px;
+  }
+  
+  .accountHeaderRight {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  
+  .headerActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  
+  /* Content wrapper */
+  .accountContent {
+    display: grid;
+    place-items: center;
+    padding: 18px 14px 48px 14px;
+  }
+  
+  .accountCard {
+    width: 100%;
+    max-width: 1200px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  
+  .accountGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+  
+  .panelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .panelTitle {
+    font-weight: 950;
+    font-size: 16px;
+  }
+  
+  .panelHint {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+  }
+  
+  .panelBadge {
+    border: 1px solid var(--success-border);
+    background: var(--success-bg);
+    color: var(--success);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 950;
+    font-size: 12px;
+  }
+  
+  /* Improved “success/error” banner (more solid / corporate) */
+  .statusBanner {
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+    display: grid;
+    gap: 4px;
+  }
+  
+  .statusBannerTitle {
+    font-weight: 950;
+    font-size: 13px;
+    letter-spacing: 0.1px;
+  }
+  
+  .statusBannerText {
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0.92;
+    line-height: 1.35;
+  }
+  
+  .statusBanner.success {
+    border-color: var(--success-border);
+    background: linear-gradient(0deg, rgba(47, 191, 113, 0.14), rgba(47, 191, 113, 0.14)), var(--surface);
+  }
+  
+  .statusBanner.success .statusBannerTitle {
+    color: var(--success);
+  }
+  
+  .statusBanner.error {
+    border-color: var(--danger-border);
+    background: linear-gradient(0deg, rgba(255, 91, 91, 0.12), rgba(255, 91, 91, 0.12)), var(--surface);
+  }
+  
+  .statusBanner.error .statusBannerTitle {
+    color: var(--danger);
+  }
+  
+  /* Profile card */
+  .profileCard {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+  }
+  
+  .profileRow {
+    display: grid;
+    gap: 6px;
+  }
+  
+  .profileLabel {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 900;
+  }
+  
+  .profileValueRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .profileValue {
+    font-weight: 950;
+    font-size: 16px;
+  }
+  
+  .profileEditRow {
+    display: grid;
+    gap: 10px;
+  }
+  
+  .profileEditActions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  
+  .pillButton {
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--text);
+    font-weight: 900;
+    cursor: pointer;
+  }
+  
+  .pillButton:hover {
+    filter: brightness(1.05);
+  }
+  
+  /* Note card */
+  .noteCard {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 14px;
+  }
+  
+  .noteTitle {
+    font-weight: 950;
+    margin-bottom: 8px;
+  }
+  
+  .noteList {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+    font-size: 13px;
+    display: grid;
+    gap: 6px;
+  }
+  
+  /* Security form */
+  .securityForm {
+    display: grid;
+    gap: 12px;
+  }
+  
+  .inlineError {
+    color: var(--danger);
+    font-weight: 900;
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--danger-border);
+    background: rgba(255, 91, 91, 0.12);
+  }
+  
+  /* Footnote */
+  .securityFootnote {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  
+  /* Simple loading skeleton */
+  .accountSkeleton {
+    height: 240px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+  
+  /* Responsive */
+  @media (max-width: 980px) {
+    .accountGrid {
+      grid-template-columns: 1fr;
+    }
+  
+    .accountHeader {
+      position: static;
+    }
+  }
+  

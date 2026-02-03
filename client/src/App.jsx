@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ExamCreation from "./pages/ExamCreation";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AccountManagement from "./pages/AccountManagement";
 
 export default function App() {
   return (
@@ -30,6 +31,8 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route path="/account-management" element={<AccountManagement />} />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
