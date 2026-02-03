@@ -4,6 +4,7 @@ const cors = require("cors");
 const { connectDB } = require("./db");
 const authRoutes = require("./routes/auth");
 const examRoutes = require("./routes/exams");
+const userRoutes = require("./routes/users");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/exams", examRoutes);
+app.use("/api/users", userRoutes);
 
 const port = process.env.PORT || 5000;
 

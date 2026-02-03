@@ -62,6 +62,13 @@ export default function Dashboard() {
 
                 <button
                     className="navButton"
+                    onClick={() => navigate("/user-management")}
+                >
+                    User Management
+                </button>
+
+                <button
+                    className="navButton"
                     onClick={() => navigate("/account-management")}
                 >
                     Account Management
