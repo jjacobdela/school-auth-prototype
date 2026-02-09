@@ -22,6 +22,12 @@ function isProtectedAdminEmail(email) {
   return normalizeEmail(email) === "admin@gmail.com";
 }
 
+function passwordPolicyError(pw) {
+  if (!pw) return "Password is required";
+  if (pw.length < 8) return "Password must be at least 8 characters";
+  return null;
+}
+
 /**
  * GET /api/users
  * Admin-only: list all users
@@ -56,8 +62,9 @@ router.post("/applicants", requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ message: "Valid email is required" });
     }
 
-    if (!isNonEmptyString(password) || password.length < 8) {
-      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    const pwErr = passwordPolicyError(password);
+    if (pwErr) {
+      return res.status(400).json({ message: pwErr });
     }
 
     const normalized = normalizeEmail(email);
@@ -144,6 +151,53 @@ router.patch("/:id/status", requireAuth, requireAdmin, async (req, res) => {
 });
 
 /**
+ * PATCH /api/users/:id/password
+ * Admin-only: reset a user's password
+ * body: { password }
+ */
+router.patch("/:id/password", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body || {};
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    const pwErr = passwordPolicyError(password);
+    if (pwErr) {
+      return res.status(400).json({ message: pwErr });
+    }
+
+    const user = await User.findById(id).select("_id email fullName role status createdAt updatedAt passwordHash");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (isProtectedAdminEmail(user.email)) {
+      return res.status(403).json({ message: "admin@gmail.com password reset is not allowed here" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    user.passwordHash = passwordHash;
+    await user.save();
+
+    return res.json({
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
  * DELETE /api/users/:id
  * Admin-only: delete a user
  */
@@ -155,7 +209,7 @@ router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ message: "Invalid user id" });
     }
 
-    const user = await User.findById(id).select("_id email");
+    const user = await User.findById(id).select("_id email fullName");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     if (isProtectedAdminEmail(user.email)) {

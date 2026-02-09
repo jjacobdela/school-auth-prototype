@@ -103,6 +103,13 @@ export default function UserManagement() {
     confirm: false
   });
 
+  // Reset password modal
+  const [pwUser, setPwUser] = useState(null);
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwTouched, setPwTouched] = useState({ pw: false, confirm: false });
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
@@ -391,6 +398,84 @@ export default function UserManagement() {
     }
   }
 
+  // ===== Reset Password modal helpers =====
+  function openPasswordModal(u) {
+    setUiMessage({ type: "", title: "", text: "" });
+    setPwUser(u);
+    setPwNew("");
+    setPwConfirm("");
+    setPwTouched({ pw: false, confirm: false });
+  }
+
+  function closePasswordModal() {
+    setPwUser(null);
+    setPwNew("");
+    setPwConfirm("");
+    setPwTouched({ pw: false, confirm: false });
+    setPwSaving(false);
+  }
+
+  const pwErr = useMemo(() => {
+    if (!pwTouched.pw) return null;
+    return passwordPolicyError(pwNew);
+  }, [pwNew, pwTouched.pw]);
+
+  const pwConfirmErr = useMemo(() => {
+    if (!pwTouched.confirm) return null;
+    if (!pwConfirm) return "Please confirm the password.";
+    if (pwConfirm !== pwNew) return "Passwords do not match.";
+    return null;
+  }, [pwConfirm, pwNew, pwTouched.confirm]);
+
+  const canSavePw = useMemo(() => {
+    if (!isAdmin) return false;
+    if (!pwUser?._id) return false;
+    if (passwordPolicyError(pwNew)) return false;
+    if (pwConfirm !== pwNew) return false;
+    return true;
+  }, [isAdmin, pwUser, pwNew, pwConfirm]);
+
+  async function saveResetPassword() {
+    if (!pwUser?._id) return;
+
+    setPwTouched({ pw: true, confirm: true });
+
+    if (!canSavePw) {
+      setUiMessage({
+        type: "error",
+        title: "Fix the form errors",
+        text: "Please correct the password fields before saving."
+      });
+      return;
+    }
+
+    setPwSaving(true);
+    setUiMessage({ type: "", title: "", text: "" });
+
+    try {
+      await apiRequest(`/users/${pwUser._id}/password`, {
+        method: "PATCH",
+        body: { password: pwNew }
+      });
+
+      setUiMessage({
+        type: "success",
+        title: "Password updated",
+        text: `Password reset successful for ${pwUser.email}.`
+      });
+
+      closePasswordModal();
+      await loadUsers();
+    } catch (err) {
+      setUiMessage({
+        type: "error",
+        title: "Password reset failed",
+        text: err.message || "Failed to reset password."
+      });
+      setPwSaving(false);
+    }
+  }
+
   return (
     <div className="userMgmtPage">
       <header className="userMgmtHeader">
@@ -605,6 +690,16 @@ export default function UserManagement() {
                             <button
                               className="navButton"
                               type="button"
+                              onClick={() => openPasswordModal(u)}
+                              disabled={isAdminRow}
+                              title={isAdminRow ? "Admin password reset is blocked" : "Reset password"}
+                            >
+                              Reset Password
+                            </button>
+
+                            <button
+                              className="navButton"
+                              type="button"
                               onClick={() => toggleUserStatus(u)}
                               disabled={isAdminRow}
                               title={isAdminRow ? "Admin cannot be disabled here" : "Toggle status"}
@@ -669,24 +764,100 @@ export default function UserManagement() {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </>
+              ) : null}
 
-                      <div className="modalActions">
-                        <button
-                          className="navButton"
-                          type="button"
-                          onClick={() => toggleUserStatus(selectedUser)}
-                          disabled={(selectedUser.role || "applicant") === "admin" || (selectedUser.email || "").toLowerCase() === "admin@gmail.com"}
-                        >
-                          {(selectedUser.status || "Active") === "Disabled" ? "Enable User" : "Disable User"}
-                        </button>
-                        <button
-                          className="dangerButton"
-                          type="button"
-                          onClick={() => deleteUser(selectedUser)}
-                          disabled={(selectedUser.role || "applicant") === "admin" || (selectedUser.email || "").toLowerCase() === "admin@gmail.com"}
-                        >
-                          Delete User
-                        </button>
+              {pwUser ? (
+                <>
+                  <div className="modalBackdrop" onClick={closePasswordModal} />
+                  <div className="modal" role="dialog" aria-modal="true">
+                    <div className="modalHeader">
+                      <div className="modalTitle">Reset Password</div>
+                      <button className="navButton" type="button" onClick={closePasswordModal} disabled={pwSaving}>
+                        Close
+                      </button>
+                    </div>
+
+                    <div className="modalBody">
+                      <div className="detailGrid">
+                        <div className="detailItem">
+                          <div className="detailLabel">User</div>
+                          <div className="detailValue">{pwUser.fullName || "—"}</div>
+                        </div>
+                        <div className="detailItem">
+                          <div className="detailLabel">Email</div>
+                          <div className="detailValue">{pwUser.email || "—"}</div>
+                        </div>
+                      </div>
+
+                      <div className="createCard" style={{ marginTop: 12 }}>
+                        <div className="createHeader">
+                          <div className="createTitle">New Password</div>
+                          <div className="createHint">
+                            Set a temporary password and share it securely with the applicant.
+                          </div>
+                        </div>
+
+                        <div className="createForm">
+                          <label className="label">
+                            Password
+                            <div className="pwRow">
+                              <input
+                                className={`input ${pwErr ? "inputError" : ""}`}
+                                value={pwNew}
+                                onChange={(e) => setPwNew(e.target.value)}
+                                onBlur={() => setPwTouched((p) => ({ ...p, pw: true }))}
+                                placeholder="Min 8 characters"
+                              />
+                              <button
+                                className="navButton"
+                                type="button"
+                                onClick={() => {
+                                  setPwNew(generateTempPassword());
+                                  setPwTouched((p) => ({ ...p, pw: true }));
+                                }}
+                                disabled={pwSaving}
+                              >
+                                Generate
+                              </button>
+                            </div>
+                            {pwErr ? <div className="fieldError">{pwErr}</div> : null}
+                          </label>
+
+                          <label className="label">
+                            Confirm Password
+                            <input
+                              className={`input ${pwConfirmErr ? "inputError" : ""}`}
+                              value={pwConfirm}
+                              onChange={(e) => setPwConfirm(e.target.value)}
+                              onBlur={() => setPwTouched((p) => ({ ...p, confirm: true }))}
+                              placeholder="Re-enter password"
+                            />
+                            {pwConfirmErr ? <div className="fieldError">{pwConfirmErr}</div> : null}
+                          </label>
+
+                          <div className="createFooter">
+                            <div className="createNote">
+                              Recommended: applicant should change password on first login (feature can be added later).
+                            </div>
+
+                            <div className="createActions">
+                              <button className="navButton" type="button" onClick={closePasswordModal} disabled={pwSaving}>
+                                Cancel
+                              </button>
+                              <button
+                                className={`navButton primary ${!canSavePw || pwSaving ? "disabled" : ""}`}
+                                type="button"
+                                onClick={saveResetPassword}
+                                disabled={!canSavePw || pwSaving}
+                              >
+                                {pwSaving ? "Saving…" : "Update Password"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

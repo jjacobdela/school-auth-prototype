@@ -567,16 +567,16 @@ export default function ExamCreation() {
           </label>
 
           <div className="headerActions">
-            <button className="navButton" onClick={handleBack}>
-              Back
-            </button>
-
             <button className="navButton" onClick={startNewDraftNoPrompt}>
               New Draft
             </button>
 
             <button className="navButton" onClick={toggleDrafts}>
               Drafts
+            </button>
+
+            <button className="navButton" onClick={handleBack}>
+              Back
             </button>
 
             {showBuilderOnly ? (
