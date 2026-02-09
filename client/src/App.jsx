@@ -33,9 +33,23 @@ export default function App() {
         }
       />
 
-      <Route path="/account-management" element={<AccountManagement />} />
+      <Route
+        path="/account-management"
+        element={
+          <ProtectedRoute>
+            <AccountManagement />
+          </ProtectedRoute>
+        }
+      />
 
-      <Route path="/user-management" element={<UserManagement />} />
+      <Route
+        path="/user-management"
+        element={
+          <ProtectedRoute>
+            <UserManagement />
+          </ProtectedRoute>
+        }
+      />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

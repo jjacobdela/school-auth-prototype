@@ -3,39 +3,21 @@ import { useNavigate } from "react-router-dom";
 import "../styles/form.css";
 import "../styles/themes.css";
 import "../styles/userManagement.css";
-import { me } from "../api/auth";
+import { me, getToken } from "../api/auth";
 
-function getToken() {
-  return localStorage.getItem("token");
-}
+const API_BASE = "http://localhost:5001/api";
 
-async function apiGet(url) {
+async function apiRequest(path, { method = "GET", body } = {}) {
   const token = getToken();
   if (!token) throw new Error("Not authenticated");
 
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-
-  if (!res.ok) throw new Error(data?.message || "Request failed");
-  return data;
-}
-
-async function apiPost(url, body) {
-  const token = getToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const res = await fetch(url, {
-    method: "POST",
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
+      ...(body ? { "Content-Type": "application/json" } : {})
     },
-    body: JSON.stringify(body)
+    body: body ? JSON.stringify(body) : undefined
   });
 
   const text = await res.text();
@@ -88,36 +70,6 @@ function generateTempPassword() {
   return base.join("");
 }
 
-const MOCK_USERS = [
-  {
-    id: "u_admin",
-    fullName: "Admin User",
-    email: "admin@gmail.com",
-    role: "admin",
-    status: "Active",
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 12,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 2
-  },
-  {
-    id: "u_app_1",
-    fullName: "Applicant One",
-    email: "applicant1@example.com",
-    role: "applicant",
-    status: "Active",
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 4,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 1
-  },
-  {
-    id: "u_app_2",
-    fullName: "Applicant Two",
-    email: "applicant2@example.com",
-    role: "applicant",
-    status: "Disabled",
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 8,
-    updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 6
-  }
-];
-
 export default function UserManagement() {
   const navigate = useNavigate();
 
@@ -127,8 +79,6 @@ export default function UserManagement() {
   const [viewer, setViewer] = useState(null);
 
   const [users, setUsers] = useState([]);
-  const [dataMode, setDataMode] = useState("mock"); // mock | api
-
   const [viewMode, setViewMode] = useState("list"); // list | create
 
   const [search, setSearch] = useState("");
@@ -186,18 +136,7 @@ export default function UserManagement() {
     setLoading(true);
 
     try {
-      if (dataMode === "mock") {
-        setUsers(MOCK_USERS);
-        setUiMessage({
-          type: "info",
-          title: "Mock data",
-          text: "This page is using mock data. Switch to API mode once backend endpoints are ready."
-        });
-        return;
-      }
-
-      const base = "http://localhost:5001";
-      const data = await apiGet(`${base}/api/users`);
+      const data = await apiRequest("/users");
       const list = Array.isArray(data?.users) ? data.users : [];
       setUsers(list);
 
@@ -209,9 +148,7 @@ export default function UserManagement() {
       setUiMessage({
         type: "error",
         title: "Unable to load users",
-        text:
-          err.message ||
-          "Failed to load users. If endpoints are not ready, switch to Mock mode."
+        text: err.message || "Failed to load users."
       });
     } finally {
       setLoading(false);
@@ -219,17 +156,9 @@ export default function UserManagement() {
   }
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      await loadUsers();
-      if (!mounted) return;
-    })();
-
-    return () => {
-      mounted = false;
-    };
+    loadUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataMode]);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -280,45 +209,6 @@ export default function UserManagement() {
 
   function closeUser() {
     setSelectedUser(null);
-  }
-
-  function uiToggleDisable(u) {
-    const nextStatus = (u.status || "Active") === "Disabled" ? "Active" : "Disabled";
-
-    setUsers((prev) =>
-      prev.map((x) => {
-        const match = (x._id || x.id) === (u._id || u.id);
-        if (!match) return x;
-        return { ...x, status: nextStatus, updatedAt: Date.now() };
-      })
-    );
-
-    setUiMessage({
-      type: "success",
-      title: "User updated",
-      text: `User status updated (UI-only): ${u.fullName} is now ${nextStatus}.`
-    });
-
-    setSelectedUser((prev) => {
-      if (!prev) return prev;
-      const match = (prev._id || prev.id) === (u._id || u.id);
-      if (!match) return prev;
-      return { ...prev, status: nextStatus, updatedAt: Date.now() };
-    });
-  }
-
-  function uiDeleteUser(u) {
-    const ok = window.confirm(`Delete ${u.fullName}? This is UI-only right now.`);
-    if (!ok) return;
-
-    setUsers((prev) => prev.filter((x) => (x._id || x.id) !== (u._id || u.id)));
-    setUiMessage({ type: "success", title: "User deleted", text: `User deleted (UI-only): ${u.fullName}` });
-
-    setSelectedUser((prev) => {
-      if (!prev) return prev;
-      const match = (prev._id || prev.id) === (u._id || u.id);
-      return match ? null : prev;
-    });
   }
 
   function resetCreateForm() {
@@ -414,40 +304,13 @@ export default function UserManagement() {
     setCreating(true);
 
     try {
-      if (dataMode === "mock") {
-        const now = Date.now();
-        const next = {
-          id: crypto.randomUUID(),
-          fullName: appFullName.trim(),
-          email: appEmail.trim().toLowerCase(),
-          role: "applicant",
-          status: "Active",
-          createdAt: now,
-          updatedAt: now
-        };
-
-        setUsers((prev) => [next, ...prev]);
-
-        setUiMessage({
-          type: "success",
-          title: "Applicant created",
-          text: `Applicant account created (UI-only): ${next.email}`
-        });
-
-        goToList();
-        return;
-      }
-
-      const base = "http://localhost:5001";
-
       const payload = {
         fullName: appFullName.trim(),
         email: appEmail.trim().toLowerCase(),
-        password: appPassword,
-        role: "applicant"
+        password: appPassword
       };
 
-      await apiPost(`${base}/api/users/applicants`, payload);
+      await apiRequest("/users/applicants", { method: "POST", body: payload });
 
       setUiMessage({
         type: "success",
@@ -461,12 +324,70 @@ export default function UserManagement() {
       setUiMessage({
         type: "error",
         title: "Create failed",
-        text:
-          err.message ||
-          "Failed to create applicant. If the backend endpoint is not ready, switch to Mock mode."
+        text: err.message || "Failed to create applicant."
       });
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function toggleUserStatus(u) {
+    setUiMessage({ type: "", title: "", text: "" });
+
+    try {
+      const id = u._id;
+      const current = u.status || "Active";
+      const nextStatus = current === "Disabled" ? "Active" : "Disabled";
+
+      const data = await apiRequest(`/users/${id}/status`, {
+        method: "PATCH",
+        body: { status: nextStatus }
+      });
+
+      const updated = data?.user
+        ? data.user
+        : { ...u, status: nextStatus, updatedAt: Date.now() };
+
+      setUsers((prev) => prev.map((x) => (x._id === id ? { ...x, ...updated } : x)));
+      setSelectedUser((prev) => (prev && prev._id === id ? { ...prev, ...updated } : prev));
+
+      setUiMessage({
+        type: "success",
+        title: "User updated",
+        text: `User status updated: ${updated.fullName} is now ${updated.status}.`
+      });
+    } catch (err) {
+      setUiMessage({
+        type: "error",
+        title: "Update failed",
+        text: err.message || "Failed to update user status."
+      });
+    }
+  }
+
+  async function deleteUser(u) {
+    const ok = window.confirm(`Delete ${u.fullName}? This cannot be undone.`);
+    if (!ok) return;
+
+    setUiMessage({ type: "", title: "", text: "" });
+
+    try {
+      await apiRequest(`/users/${u._id}`, { method: "DELETE" });
+
+      setUsers((prev) => prev.filter((x) => x._id !== u._id));
+      setSelectedUser((prev) => (prev && prev._id === u._id ? null : prev));
+
+      setUiMessage({
+        type: "success",
+        title: "User deleted",
+        text: `User deleted: ${u.fullName}`
+      });
+    } catch (err) {
+      setUiMessage({
+        type: "error",
+        title: "Delete failed",
+        text: err.message || "Failed to delete user."
+      });
     }
   }
 
@@ -479,7 +400,9 @@ export default function UserManagement() {
           </div>
           <div className="brandText">
             <div className="brandTitle">User Management</div>
-            <div className="brandSubtitle">Admin creates applicant accounts. Applicants use a separate dashboard later.</div>
+            <div className="brandSubtitle">
+              Admin creates applicant accounts. Applicants get a separate dashboard later.
+            </div>
           </div>
         </div>
 
@@ -502,7 +425,12 @@ export default function UserManagement() {
             </button>
 
             {viewMode === "list" ? (
-              <button className={`navButton primary ${!isAdmin ? "disabled" : ""}`} type="button" onClick={goToCreateApplicant} disabled={!isAdmin}>
+              <button
+                className={`navButton primary ${!isAdmin ? "disabled" : ""}`}
+                type="button"
+                onClick={goToCreateApplicant}
+                disabled={!isAdmin}
+              >
                 Create Applicant
               </button>
             ) : (
@@ -528,7 +456,9 @@ export default function UserManagement() {
               {viewer ? (
                 <div className="viewerLine">
                   Signed in as <span className="viewerStrong">{viewer.fullName}</span> ({viewer.email}){" "}
-                  <span className={`rolePill ${isAdmin ? "admin" : "applicant"}`}>{isAdmin ? "Admin" : "Applicant"}</span>
+                  <span className={`rolePill ${isAdmin ? "admin" : "applicant"}`}>
+                    {isAdmin ? "Admin" : "Applicant"}
+                  </span>
                 </div>
               ) : null}
             </div>
@@ -565,11 +495,7 @@ export default function UserManagement() {
 
           <div className="topActionsRow">
             <div className="segmented">
-              <button
-                className={`segBtn ${viewMode === "list" ? "active" : ""}`}
-                type="button"
-                onClick={goToList}
-              >
+              <button className={`segBtn ${viewMode === "list" ? "active" : ""}`} type="button" onClick={goToList}>
                 Users
               </button>
               <button
@@ -582,14 +508,6 @@ export default function UserManagement() {
                 Create Applicant
               </button>
             </div>
-
-            <label className="modePill">
-              Data
-              <select className="modeSelect" value={dataMode} onChange={(e) => setDataMode(e.target.value)}>
-                <option value="mock">Mock</option>
-                <option value="api">API</option>
-              </select>
-            </label>
           </div>
 
           {viewMode === "list" ? (
@@ -652,9 +570,10 @@ export default function UserManagement() {
                 ) : (
                   <div className="userTableBody">
                     {filtered.map((u) => {
-                      const key = u._id || u.id || `${u.email}-${u.fullName}`;
+                      const key = u._id || `${u.email}-${u.fullName}`;
                       const status = u.status || "Active";
                       const role = u.role || "applicant";
+                      const isAdminRow = role === "admin" || (u.email || "").toLowerCase() === "admin@gmail.com";
 
                       return (
                         <div className="userRow" key={key}>
@@ -665,7 +584,9 @@ export default function UserManagement() {
                           <div className="cellEmail">{u.email || "—"}</div>
 
                           <div className="cellRole">
-                            <span className={`pill ${role === "admin" ? "pillAdmin" : "pillApplicant"}`}>{role}</span>
+                            <span className={`pill ${isAdminRow ? "pillAdmin" : "pillApplicant"}`}>
+                              {isAdminRow ? "admin" : "applicant"}
+                            </span>
                           </div>
 
                           <div className="cellStatus">
@@ -684,9 +605,9 @@ export default function UserManagement() {
                             <button
                               className="navButton"
                               type="button"
-                              onClick={() => uiToggleDisable(u)}
-                              disabled={role === "admin"}
-                              title={role === "admin" ? "Admin cannot be disabled here" : "Toggle status"}
+                              onClick={() => toggleUserStatus(u)}
+                              disabled={isAdminRow}
+                              title={isAdminRow ? "Admin cannot be disabled here" : "Toggle status"}
                             >
                               {status === "Disabled" ? "Enable" : "Disable"}
                             </button>
@@ -694,9 +615,9 @@ export default function UserManagement() {
                             <button
                               className="dangerButton"
                               type="button"
-                              onClick={() => uiDeleteUser(u)}
-                              disabled={role === "admin"}
-                              title={role === "admin" ? "Admin cannot be deleted here" : "Delete user"}
+                              onClick={() => deleteUser(u)}
+                              disabled={isAdminRow}
+                              title={isAdminRow ? "Admin cannot be deleted here" : "Delete user"}
                             >
                               Delete
                             </button>
@@ -743,7 +664,9 @@ export default function UserManagement() {
                         </div>
                         <div className="detailItem">
                           <div className="detailLabel">Updated</div>
-                          <div className="detailValue">{formatDate(selectedUser.updatedAt || selectedUser.createdAt)}</div>
+                          <div className="detailValue">
+                            {formatDate(selectedUser.updatedAt || selectedUser.createdAt)}
+                          </div>
                         </div>
                       </div>
 
@@ -751,23 +674,19 @@ export default function UserManagement() {
                         <button
                           className="navButton"
                           type="button"
-                          onClick={() => uiToggleDisable(selectedUser)}
-                          disabled={(selectedUser.role || "applicant") === "admin"}
+                          onClick={() => toggleUserStatus(selectedUser)}
+                          disabled={(selectedUser.role || "applicant") === "admin" || (selectedUser.email || "").toLowerCase() === "admin@gmail.com"}
                         >
                           {(selectedUser.status || "Active") === "Disabled" ? "Enable User" : "Disable User"}
                         </button>
                         <button
                           className="dangerButton"
                           type="button"
-                          onClick={() => uiDeleteUser(selectedUser)}
-                          disabled={(selectedUser.role || "applicant") === "admin"}
+                          onClick={() => deleteUser(selectedUser)}
+                          disabled={(selectedUser.role || "applicant") === "admin" || (selectedUser.email || "").toLowerCase() === "admin@gmail.com"}
                         >
                           Delete User
                         </button>
-                      </div>
-
-                      <div className="modalNote">
-                        Actions here are UI-only for now. When you’re ready, we can wire these to backend endpoints.
                       </div>
                     </div>
                   </div>
