@@ -351,9 +351,7 @@ export default function UserManagement() {
         body: { status: nextStatus }
       });
 
-      const updated = data?.user
-        ? data.user
-        : { ...u, status: nextStatus, updatedAt: Date.now() };
+      const updated = data?.user ? data.user : { ...u, status: nextStatus, updatedAt: Date.now() };
 
       setUsers((prev) => prev.map((x) => (x._id === id ? { ...x, ...updated } : x)));
       setSelectedUser((prev) => (prev && prev._id === id ? { ...prev, ...updated } : prev));
@@ -534,7 +532,7 @@ export default function UserManagement() {
               <h1 className="pageTitle">{viewMode === "list" ? "Users" : "Create Applicant"}</h1>
               <p className="pageSubtitle">
                 {viewMode === "list"
-                  ? "View applicant accounts. Only admin@gmail.com can create applicants."
+                  ? "Click a row to view user details. Actions stay on the right."
                   : "Create an applicant account for hiring assessments. Share credentials securely."}
               </p>
 
@@ -661,7 +659,17 @@ export default function UserManagement() {
                       const isAdminRow = role === "admin" || (u.email || "").toLowerCase() === "admin@gmail.com";
 
                       return (
-                        <div className="userRow" key={key}>
+                        <div
+                          className="userRow"
+                          key={key}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openUser(u)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") openUser(u);
+                          }}
+                          title="Click to view details"
+                        >
                           <div className="cellName">
                             <div className="nameStrong">{u.fullName || "—"}</div>
                           </div>
@@ -682,11 +690,8 @@ export default function UserManagement() {
 
                           <div className="cellCreated">{formatDate(u.createdAt)}</div>
 
-                          <div className="cellActions">
-                            <button className="navButton primary" type="button" onClick={() => openUser(u)}>
-                              View
-                            </button>
-
+                          {/* IMPORTANT: prevent row click when pressing action buttons */}
+                          <div className="cellActions" onClick={(e) => e.stopPropagation()}>
                             <button
                               className="navButton"
                               type="button"
