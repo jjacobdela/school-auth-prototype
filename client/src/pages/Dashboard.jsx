@@ -6,8 +6,9 @@ import "../styles/dashboard.css";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const [viewer, setViewer] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -16,7 +17,18 @@ export default function Dashboard() {
     async function load() {
       try {
         const data = await me();
-        if (mounted) setUser(data.user);
+        if (!mounted) return;
+
+        const user = data.user;
+        setViewer(user);
+
+        const email = (user?.email || "").toLowerCase();
+        const isAdmin = user?.role === "admin" || email === "admin@gmail.com";
+
+        if (!isAdmin) {
+          navigate("/applicant-dashboard", { replace: true });
+          return;
+        }
       } catch (err) {
         if (mounted) setError(err.message || "Not authenticated");
       } finally {
@@ -28,11 +40,60 @@ export default function Dashboard() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [navigate]);
 
   function logout() {
     clearToken();
     navigate("/login");
+  }
+
+  // IMPORTANT: Do not render the admin dashboard UI until we know the role.
+  if (loading) {
+    return (
+      <div className="dashboardPage">
+        <div className="page">
+          <div className="card">
+            <h1 className="title">Loading...</h1>
+            <p className="subtitle">Checking your access.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && error) {
+    clearToken();
+    return (
+      <div className="dashboardPage">
+        <div className="page">
+          <div className="card">
+            <h1 className="title">Session expired</h1>
+            <p className="subtitle">Please log in again.</p>
+            <div className="error">{error}</div>
+            <button className="button" onClick={() => navigate("/login")}>
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const email = (viewer?.email || "").toLowerCase();
+  const isAdmin = viewer?.role === "admin" || email === "admin@gmail.com";
+
+  // If not admin, we already navigated away above, but keep a safety return.
+  if (!isAdmin) {
+    return (
+      <div className="dashboardPage">
+        <div className="page">
+          <div className="card">
+            <h1 className="title">Redirecting...</h1>
+            <p className="subtitle">Taking you to your dashboard.</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -62,21 +123,24 @@ export default function Dashboard() {
       <div className="page">
         <div className="card">
           <h1 className="title">Dashboard</h1>
-          <p className="subtitle">Protected page (requires login).</p>
+          <p className="subtitle">Admin workspace.</p>
 
-          {loading && <p>Loading...</p>}
-          {!loading && error && <div className="error">{error}</div>}
-
-          {!loading && user && (
+          {viewer && (
             <div className="profileBox">
               <div>
-                <strong>Name:</strong> {user.fullName}
+                <strong>Name:</strong> {viewer.fullName}
               </div>
               <div>
-                <strong>Email:</strong> {user.email}
+                <strong>Email:</strong> {viewer.email}
               </div>
               <div>
-                <strong>Created:</strong> {new Date(user.createdAt).toLocaleString()}
+                <strong>Role:</strong> {viewer.role || "admin"}
+              </div>
+              <div>
+                <strong>Status:</strong> {viewer.status || "Active"}
+              </div>
+              <div>
+                <strong>Created:</strong> {viewer.createdAt ? new Date(viewer.createdAt).toLocaleString() : "—"}
               </div>
             </div>
           )}

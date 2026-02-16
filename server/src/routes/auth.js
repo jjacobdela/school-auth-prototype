@@ -26,6 +26,30 @@ function signToken(user) {
   );
 }
 
+async function ensureRoleAndStatus(userDoc) {
+  if (!userDoc) return userDoc;
+
+  let changed = false;
+
+  // Backfill missing fields for legacy users
+  if (!userDoc.role) {
+    const email = (userDoc.email || "").toLowerCase();
+    userDoc.role = email === "admin@gmail.com" ? "admin" : "applicant";
+    changed = true;
+  }
+
+  if (!userDoc.status) {
+    userDoc.status = "Active";
+    changed = true;
+  }
+
+  if (changed) {
+    await userDoc.save();
+  }
+
+  return userDoc;
+}
+
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
   try {
@@ -85,10 +109,13 @@ router.post("/login", async (req, res) => {
 
     const normalized = normalizeEmail(email);
 
-    const user = await User.findOne({ email: normalized });
+    let user = await User.findOne({ email: normalized });
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
+
+    // Backfill role/status for legacy records
+    user = await ensureRoleAndStatus(user);
 
     if (user.status === "Disabled") {
       return res.status(403).json({ message: "Account is disabled" });
@@ -113,8 +140,11 @@ router.post("/login", async (req, res) => {
 // GET /api/auth/me (protected)
 router.get("/me", requireAuth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select("_id fullName email role status createdAt");
+    let user = await User.findById(req.user.userId).select("_id fullName email role status createdAt");
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Backfill role/status for legacy records
+    user = await ensureRoleAndStatus(user);
 
     if (user.status === "Disabled") {
       return res.status(403).json({ message: "Account is disabled" });

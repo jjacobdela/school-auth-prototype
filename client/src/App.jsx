@@ -4,9 +4,12 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ExamCreation from "./pages/ExamCreation";
-import ProtectedRoute from "./components/ProtectedRoute";
 import AccountManagement from "./pages/AccountManagement";
 import UserManagement from "./pages/UserManagement";
+import RoleRoute from "./components/RoleRoute";
+import ApplicantDashboard from "./pages/ApplicantDashboard";
+import ApplicantModules from "./pages/ApplicantModules";
+import ApplicantExam from "./pages/ApplicantExam";
 
 export default function App() {
   return (
@@ -15,39 +18,71 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
+      {/* Shared: any authenticated user can enter /dashboard,
+          but Dashboard will redirect based on role */}
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <RoleRoute roles={["admin", "applicant"]}>
             <Dashboard />
-          </ProtectedRoute>
+          </RoleRoute>
         }
       />
 
+      {/* Admin-only routes */}
       <Route
         path="/exam-creation"
         element={
-          <ProtectedRoute>
+          <RoleRoute roles={["admin"]}>
             <ExamCreation />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/account-management"
-        element={
-          <ProtectedRoute>
-            <AccountManagement />
-          </ProtectedRoute>
+          </RoleRoute>
         }
       />
 
       <Route
         path="/user-management"
         element={
-          <ProtectedRoute>
+          <RoleRoute roles={["admin"]}>
             <UserManagement />
-          </ProtectedRoute>
+          </RoleRoute>
+        }
+      />
+
+      {/* Shared authenticated route */}
+      <Route
+        path="/account-management"
+        element={
+          <RoleRoute roles={["admin", "applicant"]}>
+            <AccountManagement />
+          </RoleRoute>
+        }
+      />
+
+      {/* Applicant-only routes */}
+      <Route
+        path="/applicant-dashboard"
+        element={
+          <RoleRoute roles={["applicant"]}>
+            <ApplicantDashboard />
+          </RoleRoute>
+        }
+      />
+
+      <Route
+        path="/modules"
+        element={
+          <RoleRoute roles={["applicant"]}>
+            <ApplicantModules />
+          </RoleRoute>
+        }
+      />
+
+      <Route
+        path="/exam"
+        element={
+          <RoleRoute roles={["applicant"]}>
+            <ApplicantExam />
+          </RoleRoute>
         }
       />
 
