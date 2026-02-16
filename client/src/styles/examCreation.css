@@ -844,3 +844,77 @@
     }
   }
   
+  /* ===== Header actions layout (Canvas-like) ===== */
+.headerActionsWrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: 14px;
+}
+
+.headerActionsGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerActionsGroupLeft {
+  padding-right: 12px;
+  border-right: 1px solid var(--line);
+}
+
+.headerActionsGroupRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Prevent header from "jumping" when switching between Published vs Builder mode */
+.slotHidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Responsive: allow wrapping without weird spacing */
+@media (max-width: 920px) {
+  .headerActionsWrap {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .headerActionsGroupLeft {
+    border-right: none;
+    padding-right: 0;
+  }
+}
+
+/* ===== Header actions layout (Canvas-like) ===== */
+.headerActionsWrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: 14px;
+}
+
+.headerActionsGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerActionsGroupLeft {
+  padding-right: 12px;
+  border-right: 1px solid var(--line);
+}
+
+@media (max-width: 920px) {
+  .headerActionsWrap {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .headerActionsGroupLeft {
+    border-right: none;
+    padding-right: 0;
+  }
+}

@@ -288,17 +288,11 @@ export default function ExamCreation() {
     setConfirmClearAll(false);
   }
 
-  // NEW DRAFT:
-  // - NO prompt when clicking from published mode
-  // - Switch to builder mode and hide published list
   function startNewDraftNoPrompt() {
     resetBuilderStateOnly();
     setViewMode("builder");
   }
 
-  // BACK behavior:
-  // - In builder mode: show warning (localhost confirm) then go to published mode
-  // - In published mode: go to dashboard
   function handleBack() {
     if (viewMode === "builder") {
       const ok = window.confirm(
@@ -371,7 +365,6 @@ export default function ExamCreation() {
     setDraftToDelete(null);
     setConfirmClearAll(false);
 
-    // Loading a draft should open builder mode
     setViewMode("builder");
 
     alert("Draft loaded.");
@@ -413,7 +406,6 @@ export default function ExamCreation() {
       setDurationMinutes(exam.durationMinutes || 30);
       setQuestions(normalizeQuestions(exam.questions || []));
 
-      // Editing opens builder and hides published list
       setViewMode("builder");
 
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -464,7 +456,6 @@ export default function ExamCreation() {
 
       await refreshPublished();
 
-      // After publish/update, go back to Mode 1
       resetBuilderStateOnly();
       setViewMode("published");
     } catch (err) {
@@ -474,7 +465,6 @@ export default function ExamCreation() {
     }
   }
 
-  // Drag handlers
   function onDragStart(e, questionId, index) {
     setDraggingId(questionId);
     setDragOverId(null);
@@ -566,43 +556,47 @@ export default function ExamCreation() {
             </select>
           </label>
 
-          <div className="headerActions">
-            <button className="navButton" onClick={startNewDraftNoPrompt}>
-              New Draft
-            </button>
+          <div className="headerActionsWrap">
+            <div className="headerActionsGroup headerActionsGroupLeft">
+              <button className="navButton" onClick={handleBack}>
+                Back
+              </button>
 
-            <button className="navButton" onClick={toggleDrafts}>
-              Drafts
-            </button>
+              <button className="navButton" onClick={toggleDrafts}>
+                Drafts
+              </button>
+            </div>
 
-            <button className="navButton" onClick={handleBack}>
-              Back
-            </button>
+            <div className="headerActionsGroup headerActionsGroupRight">
+              <button className="navButton" onClick={startNewDraftNoPrompt}>
+                New Draft
+              </button>
 
-            {showBuilderOnly ? (
-              <>
-                <button className="navButton" onClick={saveDraft}>
-                  Save Draft
-                </button>
+              {showBuilderOnly ? (
+                <>
+                  <button className="navButton" onClick={saveDraft}>
+                    Save Draft
+                  </button>
 
-                <button
-                  className={`navButton primary ${!isValid || publishing ? "disabled" : ""}`}
-                  onClick={publishOrUpdate}
-                  disabled={!isValid || publishing}
-                  title={
-                    !isValid
-                      ? "Complete required fields first"
-                      : publishing
-                      ? "Saving..."
-                      : isEditing
-                      ? "Update"
-                      : "Publish"
-                  }
-                >
-                  {publishing ? "Saving..." : isEditing ? "Update" : "Publish"}
-                </button>
-              </>
-            ) : null}
+                  <button
+                    className={`navButton primary ${!isValid || publishing ? "disabled" : ""}`}
+                    onClick={publishOrUpdate}
+                    disabled={!isValid || publishing}
+                    title={
+                      !isValid
+                        ? "Complete required fields first"
+                        : publishing
+                        ? "Saving..."
+                        : isEditing
+                        ? "Update"
+                        : "Publish"
+                    }
+                  >
+                    {publishing ? "Saving..." : isEditing ? "Update" : "Publish"}
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       </header>
@@ -752,7 +746,6 @@ export default function ExamCreation() {
 
       <div className="examContent">
         <div className="examCard">
-          {/* MODE 1: ONLY PUBLISHED EXAMS */}
           {showPublishedOnly ? (
             <div className="section">
               <div className="sectionHeader">
@@ -807,7 +800,6 @@ export default function ExamCreation() {
             </div>
           ) : null}
 
-          {/* MODE 2: ONLY BUILDER UI */}
           {showBuilderOnly ? (
             <>
               <div className="topRow">
