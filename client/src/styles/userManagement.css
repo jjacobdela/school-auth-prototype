@@ -578,4 +578,36 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* --- Actions column alignment fix --- */
+.cellActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 columns: Reset spans both, then Disable + Delete side by side */
+  gap: 10px;
+  align-content: start;
+}
+
+.cellActions .navButton,
+.cellActions .dangerButton {
+  width: 100%;
+  min-width: 0;
+  height: 44px;           /* consistent height */
+  padding: 0 14px;        /* consistent padding */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* Make Reset Password span the full row width */
+.cellActions .navButton:first-child {
+  grid-column: 1 / -1;
+}
+
+/* Optional: keep the action column width stable */
+.tableActionsCol,
+.cellActions {
+  min-width: 280px;
+}
+
   

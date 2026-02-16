@@ -106,6 +106,12 @@ export default function AccountManagement() {
     };
   }, [navigate]);
 
+  const backRoute = useMemo(() => {
+    const email = (user?.email || "").toLowerCase();
+    const isAdmin = user?.role === "admin" || email === "admin@gmail.com";
+    return isAdmin ? "/dashboard" : "/applicant-dashboard";
+  }, [user]);
+
   // Only show inline errors when user interacts OR submits
   const shouldShowPwErrors = useMemo(() => {
     return pwSubmitAttempted || pwTouchedNew || pwTouchedConfirm;
@@ -301,7 +307,7 @@ export default function AccountManagement() {
           </label>
 
           <div className="headerActions">
-            <button className="navButton" type="button" onClick={() => navigate("/dashboard")}>
+            <button className="navButton" type="button" onClick={() => navigate(backRoute)}>
               Back
             </button>
           </div>

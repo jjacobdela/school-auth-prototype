@@ -82,7 +82,6 @@ export default function UserManagement() {
   const [viewMode, setViewMode] = useState("list"); // list | create
 
   const [search, setSearch] = useState("");
-  const [showAllRoles, setShowAllRoles] = useState(false);
   const [statusFilter, setStatusFilter] = useState("All");
   const [sort, setSort] = useState("updated_desc"); // updated_desc | created_desc | name_asc
 
@@ -135,7 +134,8 @@ export default function UserManagement() {
   }, [navigate]);
 
   const isAdmin = useMemo(() => {
-    return (viewer?.email || "").toLowerCase() === "admin@gmail.com";
+    const email = (viewer?.email || "").toLowerCase();
+    return viewer?.role === "admin" || email === "admin@gmail.com";
   }, [viewer]);
 
   async function loadUsers() {
@@ -171,9 +171,8 @@ export default function UserManagement() {
     const q = search.trim().toLowerCase();
     let list = [...users];
 
-    if (!showAllRoles) {
-      list = list.filter((u) => (u.role || "") === "applicant");
-    }
+    // Always show only applicants
+    list = list.filter((u) => (u.role || "") === "applicant");
 
     if (q) {
       list = list.filter((u) => {
@@ -196,7 +195,7 @@ export default function UserManagement() {
     }
 
     return list;
-  }, [users, search, showAllRoles, statusFilter, sort]);
+  }, [users, search, statusFilter, sort]);
 
   const summary = useMemo(() => {
     let total = users.length;
@@ -231,7 +230,7 @@ export default function UserManagement() {
       setUiMessage({
         type: "error",
         title: "Not authorized",
-        text: "Only admin@gmail.com can create applicant accounts."
+        text: "Admin access is required to create applicant accounts."
       });
       return;
     }
@@ -291,7 +290,7 @@ export default function UserManagement() {
       setUiMessage({
         type: "error",
         title: "Not authorized",
-        text: "Only admin@gmail.com can create applicant accounts."
+        text: "Admin access is required to create applicant accounts."
       });
       return;
     }
@@ -484,7 +483,7 @@ export default function UserManagement() {
           <div className="brandText">
             <div className="brandTitle">User Management</div>
             <div className="brandSubtitle">
-              Admin creates applicant accounts. Applicants get a separate dashboard later.
+              Admin creates and manages applicant accounts.
             </div>
           </div>
         </div>
@@ -529,10 +528,10 @@ export default function UserManagement() {
         <div className="userMgmtCard">
           <div className="userMgmtTopRow">
             <div className="userMgmtTitleBlock">
-              <h1 className="pageTitle">{viewMode === "list" ? "Users" : "Create Applicant"}</h1>
+              <h1 className="pageTitle">{viewMode === "list" ? "Applicants" : "Create Applicant"}</h1>
               <p className="pageSubtitle">
                 {viewMode === "list"
-                  ? "Click a row to view user details. Actions stay on the right."
+                  ? "Click a row to view applicant details. Actions stay on the right."
                   : "Create an applicant account for hiring assessments. Share credentials securely."}
               </p>
 
@@ -565,7 +564,7 @@ export default function UserManagement() {
           {!isAdmin ? (
             <div className="statusBanner warning">
               <div className="statusBannerTitle">Limited access</div>
-              <div className="statusBannerText">Only admin@gmail.com can create applicant accounts.</div>
+              <div className="statusBannerText">Admin access is required to create applicant accounts.</div>
             </div>
           ) : null}
 
@@ -579,7 +578,7 @@ export default function UserManagement() {
           <div className="topActionsRow">
             <div className="segmented">
               <button className={`segBtn ${viewMode === "list" ? "active" : ""}`} type="button" onClick={goToList}>
-                Users
+                Applicants
               </button>
               <button
                 className={`segBtn ${viewMode === "create" ? "active" : ""}`}
@@ -624,15 +623,6 @@ export default function UserManagement() {
                       <option value="name_asc">Name A → Z</option>
                     </select>
                   </label>
-
-                  <label className="checkPill">
-                    <input
-                      type="checkbox"
-                      checked={showAllRoles}
-                      onChange={(e) => setShowAllRoles(e.target.checked)}
-                    />
-                    Show all roles
-                  </label>
                 </div>
               </div>
 
@@ -647,16 +637,15 @@ export default function UserManagement() {
                 </div>
 
                 {loading ? (
-                  <div className="tableEmpty">Loading users…</div>
+                  <div className="tableEmpty">Loading applicants…</div>
                 ) : filtered.length === 0 ? (
-                  <div className="tableEmpty">No users match your filters.</div>
+                  <div className="tableEmpty">No applicants match your filters.</div>
                 ) : (
                   <div className="userTableBody">
                     {filtered.map((u) => {
                       const key = u._id || `${u.email}-${u.fullName}`;
                       const status = u.status || "Active";
                       const role = u.role || "applicant";
-                      const isAdminRow = role === "admin" || (u.email || "").toLowerCase() === "admin@gmail.com";
 
                       return (
                         <div
@@ -677,9 +666,7 @@ export default function UserManagement() {
                           <div className="cellEmail">{u.email || "—"}</div>
 
                           <div className="cellRole">
-                            <span className={`pill ${isAdminRow ? "pillAdmin" : "pillApplicant"}`}>
-                              {isAdminRow ? "admin" : "applicant"}
-                            </span>
+                            <span className="pill pillApplicant">{role}</span>
                           </div>
 
                           <div className="cellStatus">
@@ -696,8 +683,8 @@ export default function UserManagement() {
                               className="navButton"
                               type="button"
                               onClick={() => openPasswordModal(u)}
-                              disabled={isAdminRow}
-                              title={isAdminRow ? "Admin password reset is blocked" : "Reset password"}
+                              disabled={!isAdmin}
+                              title={!isAdmin ? "Admin only" : "Reset password"}
                             >
                               Reset Password
                             </button>
@@ -706,8 +693,8 @@ export default function UserManagement() {
                               className="navButton"
                               type="button"
                               onClick={() => toggleUserStatus(u)}
-                              disabled={isAdminRow}
-                              title={isAdminRow ? "Admin cannot be disabled here" : "Toggle status"}
+                              disabled={!isAdmin}
+                              title={!isAdmin ? "Admin only" : "Toggle status"}
                             >
                               {status === "Disabled" ? "Enable" : "Disable"}
                             </button>
@@ -716,8 +703,8 @@ export default function UserManagement() {
                               className="dangerButton"
                               type="button"
                               onClick={() => deleteUser(u)}
-                              disabled={isAdminRow}
-                              title={isAdminRow ? "Admin cannot be deleted here" : "Delete user"}
+                              disabled={!isAdmin}
+                              title={!isAdmin ? "Admin only" : "Delete user"}
                             >
                               Delete
                             </button>
@@ -734,7 +721,7 @@ export default function UserManagement() {
                   <div className="modalBackdrop" onClick={closeUser} />
                   <div className="modal" role="dialog" aria-modal="true">
                     <div className="modalHeader">
-                      <div className="modalTitle">User Details</div>
+                      <div className="modalTitle">Applicant Details</div>
                       <button className="navButton" type="button" onClick={closeUser}>
                         Close
                       </button>
@@ -966,7 +953,7 @@ export default function UserManagement() {
               {!isAdmin ? (
                 <div className="statusBanner error">
                   <div className="statusBannerTitle">Not authorized</div>
-                  <div className="statusBannerText">Only admin@gmail.com can create applicants.</div>
+                  <div className="statusBannerText">Admin access is required to create applicants.</div>
                 </div>
               ) : null}
             </div>

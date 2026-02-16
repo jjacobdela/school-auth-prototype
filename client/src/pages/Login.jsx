@@ -19,7 +19,16 @@ export default function Login() {
     try {
       const data = await login({ email, password });
       setToken(data.token);
-      navigate("/dashboard");
+
+      const viewer = data?.user || null;
+      const viewerEmail = (viewer?.email || email || "").toLowerCase();
+      const isAdmin = viewer?.role === "admin" || viewerEmail === "admin@gmail.com";
+
+      if (isAdmin) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/applicant-dashboard", { replace: true });
+      }
     } catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
