@@ -8,8 +8,16 @@ const userSchema = new mongoose.Schema(
 
     role: { type: String, enum: ["admin", "applicant"], default: "applicant" },
     status: { type: String, enum: ["Active", "Disabled"], default: "Active" }
+    
   },
   { timestamps: true }
+  
 );
+
+allowedModules: [{
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Module"
+}]
+
 
 module.exports = mongoose.model("User", userSchema);

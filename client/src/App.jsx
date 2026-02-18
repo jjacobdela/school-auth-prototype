@@ -102,14 +102,15 @@ export default function App() {
       />
 
       {/* Training (logged in) */}
-      <Route
-        path="/request-training"
-        element={
-          <ProtectedRoute>
-            <RequestTraining />
-          </ProtectedRoute>
-        }
-      />
+     <Route
+  path="/request-training"
+  element={
+    <RoleRoute roles={["admin"]}>
+      <RequestTraining />
+    </RoleRoute>
+  }
+/>
+
 
       <Route
         path="/my-training"
