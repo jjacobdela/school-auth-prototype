@@ -37,7 +37,7 @@ app.use("/api/modules", modulesRoute);
 
 
 
-const port = process.env.PORT || 5003;
+const port = process.env.PORT || 5001;
 
 connectDB(process.env.MONGO_URI)
   .then(() => {

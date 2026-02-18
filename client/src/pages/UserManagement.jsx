@@ -5,7 +5,7 @@ import "../styles/themes.css";
 import "../styles/userManagement.css";
 import { me, getToken } from "../api/auth";
 
-const API_BASE = "http://localhost:5003/api";
+const API_BASE = "http://localhost:5001/api";
 
 async function apiRequest(path, { method = "GET", body } = {}) {
   const token = getToken();
