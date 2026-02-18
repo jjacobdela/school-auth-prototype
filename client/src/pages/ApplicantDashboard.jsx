@@ -14,7 +14,7 @@ export default function ApplicantDashboard() {
   const [error, setError] = useState("");
 
   const currentPath = useMemo(() => location.pathname, [location.pathname]);
-
+ 
   useEffect(() => {
     let mounted = true;
 

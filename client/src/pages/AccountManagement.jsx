@@ -190,7 +190,7 @@ export default function AccountManagement() {
       }
 
       setSavingProfile(true);
-      await apiPatch("http://localhost:5001/api/auth/profile", { fullName: nextName });
+      await apiPatch("http://localhost:5003/api/auth/profile", { fullName: nextName });
 
       await refreshMe();
       setEditingName(false);
@@ -236,7 +236,7 @@ export default function AccountManagement() {
 
       setSavingPassword(true);
 
-      await apiPatch("http://localhost:5001/api/auth/password", {
+      await apiPatch("http://localhost:5003/api/auth/password", {
         currentPassword: currentPassword.trim(),
         newPassword: newPassword.trim()
       });
