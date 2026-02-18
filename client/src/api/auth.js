@@ -46,3 +46,5 @@ export async function me() {
   if (!res.ok) throw new Error(data.message || "Not authenticated");
   return data;
 }
+
+//passport.js

@@ -4,7 +4,7 @@ const cors = require("cors");
 const { connectDB } = require("./db");
 const authRoutes = require("./routes/auth");
 const examRoutes = require("./routes/exams");
-
+const modulesRoute = require("./routes/modules");
 const app = express();
 
 app.use(
@@ -20,6 +20,19 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/exams", examRoutes);
+app.use("/uploads", express.static("uploads"));
+
+app.use("/api/modules", require("./routes/modules"));
+app.use("/api/module-content", require("./routes/moduleContent"));
+app.use("/api/training-requests", require("./routes/trainingRequests"));
+app.use("/modules", require("./routes/modules"));
+app.use("/module-content", require("./routes/moduleContent"));
+
+
+app.use("/api/modules", modulesRoute);
+
+
+
 
 const port = process.env.PORT || 5003;
 
