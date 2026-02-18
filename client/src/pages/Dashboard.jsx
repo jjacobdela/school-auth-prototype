@@ -282,23 +282,8 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="adminTopRight">
-                    <div className="adminPrimaryActions">
-                      <button className="navButton primary" type="button" onClick={() => navigate("/user-management")}>
-                        Manage Users
-                      </button>
-                      <button className="navButton" type="button" onClick={() => navigate("/exam-creation")}>
-                        Exam Builder
-                      </button>
-                      <button className="navButton" type="button" onClick={() => navigate("/modules")}>
-                        Modules
-                      </button>
-                    </div>
-
-                    <button className="adminLinkBtn" type="button" onClick={() => navigate("/account-management")}>
-                      Account settings →
-                    </button>
-                  </div>
+                  {/* Removed: Manage Users / Exam Builder / Modules / Account settings */}
+                  <div className="adminTopRight" />
                 </div>
 
                 {statsError ? (
@@ -340,9 +325,7 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <button className="navButton" type="button" onClick={() => navigate("/exam-creation")}>
-                        Open Builder
-                      </button>
+                      {/* Removed: Open Builder button */}
                     </div>
 
                     {statsLoading ? (
@@ -369,11 +352,8 @@ export default function Dashboard() {
                                 </div>
                               </div>
 
-                              <div className="adminListActions">
-                                <button className="navButton primary" type="button" onClick={() => navigate("/exam-creation")}>
-                                  Edit
-                                </button>
-                              </div>
+                              {/* Removed: Edit button */}
+                              <div className="adminListActions" />
                             </div>
                           );
                         })}
