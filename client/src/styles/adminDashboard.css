@@ -1,0 +1,327 @@
+.adminDashWrap.compact {
+    max-width: 1150px;
+    margin: 0 auto;
+    padding: 18px;
+    border-radius: 18px;
+  }
+  
+  /* Top: one card, minimal info */
+  .adminTopCard {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(18, 24, 36, 0.82), rgba(10, 14, 22, 0.62));
+    margin-bottom: 12px;
+  }
+  
+  .adminTopTitle {
+    font-size: 22px;
+    font-weight: 950;
+    letter-spacing: -0.02em;
+    color: rgba(243, 246, 255, 0.96);
+  }
+  
+  .adminTopDesc {
+    margin-top: 6px;
+    color: rgba(243, 246, 255, 0.70);
+    line-height: 1.45;
+  }
+  
+  .adminMetaPills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  
+  .adminMetaPill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(243, 246, 255, 0.82);
+    font-size: 12px;
+    font-weight: 750;
+  }
+  
+  .adminTopRight {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  
+  .adminPrimaryActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  
+  .adminLinkBtn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: rgba(120, 170, 255, 0.95);
+    font-weight: 850;
+  }
+  
+  /* KPI: fewer, larger, calmer */
+  .adminKpiGrid.compact3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 12px 0 14px;
+  }
+  
+  .adminKpiCard {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    background: rgba(18, 24, 36, 0.58);
+    padding: 14px;
+  }
+  
+  .adminKpiLabel {
+    color: rgba(243, 246, 255, 0.62);
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  
+  .adminKpiValue {
+    margin-top: 10px;
+    font-size: 30px;
+    font-weight: 950;
+    letter-spacing: -0.03em;
+    color: rgba(243, 246, 255, 0.98);
+  }
+  
+  .adminKpiHint {
+    margin-top: 6px;
+    color: rgba(243, 246, 255, 0.62);
+    font-size: 13px;
+  }
+  
+  /* Main: only 2 cards */
+  .adminMainGrid.compactTwo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 12px;
+    align-items: start;
+  }
+  
+  .adminCard {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    background: rgba(18, 24, 36, 0.56);
+    padding: 14px;
+  }
+  
+  .adminCardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .adminCardTitle {
+    font-size: 16px;
+    font-weight: 950;
+    letter-spacing: -0.02em;
+    color: rgba(243, 246, 255, 0.96);
+  }
+  
+  .adminCardSub {
+    margin-top: 4px;
+    font-size: 13px;
+    color: rgba(243, 246, 255, 0.62);
+  }
+  
+  /* Recent list */
+  .adminList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .adminListRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(10, 14, 22, 0.52);
+  }
+  
+  .adminListMain {
+    min-width: 0;
+  }
+  
+  .adminListTitle {
+    font-weight: 950;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    color: rgba(243, 246, 255, 0.96);
+  }
+  
+  .adminListMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .adminPill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(243, 246, 255, 0.82);
+    font-size: 12px;
+    font-weight: 750;
+  }
+  
+  .adminListActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  
+  /* Right card: system + shortcuts */
+  .adminSystemBlock {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  
+  .adminSystemRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(10, 14, 22, 0.52);
+  }
+  
+  .adminSystemLabel {
+    color: rgba(243, 246, 255, 0.62);
+    font-size: 12px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  
+  .adminSystemValue {
+    color: rgba(243, 246, 255, 0.95);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    text-align: right;
+    word-break: break-word;
+  }
+  
+  .adminDivider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.10);
+    margin: 10px 0;
+  }
+  
+  .adminShortcutList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .adminShortcutLine {
+    text-align: left;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+    background: rgba(10, 14, 22, 0.52);
+    padding: 12px;
+    cursor: pointer;
+  }
+  
+  .adminShortcutLine:hover {
+    background: rgba(10, 14, 22, 0.66);
+  }
+  
+  .adminShortcutLineTitle {
+    font-weight: 950;
+    color: rgba(243, 246, 255, 0.96);
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  
+  .adminShortcutLineDesc {
+    color: rgba(243, 246, 255, 0.62);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  
+  .adminEmpty {
+    padding: 12px;
+    color: rgba(243, 246, 255, 0.72);
+  }
+  
+  .adminEmptyTitle {
+    font-weight: 900;
+    margin-bottom: 4px;
+    color: rgba(243, 246, 255, 0.96);
+  }
+  
+  .adminEmptyText {
+    color: rgba(243, 246, 255, 0.62);
+  }
+  
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .adminTopCard {
+      grid-template-columns: 1fr;
+    }
+  
+    .adminTopRight {
+      align-items: flex-start;
+    }
+  
+    .adminPrimaryActions {
+      justify-content: flex-start;
+    }
+  
+    .adminKpiGrid.compact3 {
+      grid-template-columns: 1fr;
+    }
+  
+    .adminMainGrid.compactTwo {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* One-column layout when System card is removed */
+.adminMainGrid.oneCol {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* Footer inside the main card for the refresh action */
+  .adminCardFooter {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  
