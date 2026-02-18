@@ -26,6 +26,7 @@ import UploadModuleContent from "./pages/UploadModuleContent";
 import ModuleBuilder from "./pages/ModuleBuilder";
 import ModulesList from "./pages/ModuleList";
 import ModuleView from "./pages/ModuleView";
+import ApplicantModulesView from "./pages/ApplicantModulesView";
 
 export default function App() {
   return (
@@ -123,13 +124,22 @@ export default function App() {
 
       {/* Modules system (logged in) */}
       <Route
-        path="/modules"
-        element={
-          <ProtectedRoute>
-            <ModulesList />
-          </ProtectedRoute>
-        }
-      />
+  path="/admin/modules"
+  element={
+    <RoleRoute roles={["admin"]}>
+      <ModulesList />
+    </RoleRoute>
+  }
+/>
+
+<Route
+  path="/modules"
+  element={
+    <RoleRoute roles={["applicant"]}>
+      <ApplicantModulesView />
+    </RoleRoute>
+  }
+/>
 
       <Route
         path="/modules/new"
@@ -139,6 +149,18 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route path="/modules" element={
+  <ProtectedRoute>
+    <ApplicantModulesView />  {/* view-only */}
+  </ProtectedRoute>
+} />
+
+<Route path="/modules/:id/view" element={
+  <ProtectedRoute>
+    <ModuleView />  {/* but ModuleView should call getMyModule for applicants */}
+  </ProtectedRoute>
+} />
 
       <Route
         path="/modules/:id/edit"

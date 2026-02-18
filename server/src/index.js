@@ -30,6 +30,8 @@ app.use("/api/module-content", require("./routes/moduleContent"));
 app.use("/api/training-requests", require("./routes/trainingRequests"));
 app.use("/modules", require("./routes/modules"));
 app.use("/module-content", require("./routes/moduleContent"));
+app.use("/api/my-modules", require("./routes/mymodules"));
+
 
 
 app.use("/api/modules", modulesRoute);
@@ -37,7 +39,7 @@ app.use("/api/modules", modulesRoute);
 
 
 
-const port = process.env.PORT || 5003;
+const port = process.env.PORT || 5001;
 
 connectDB(process.env.MONGO_URI)
   .then(() => {

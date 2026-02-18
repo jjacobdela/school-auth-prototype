@@ -80,7 +80,7 @@ export default function Dashboard() {
 
           <button
             className={`canvaNavItem ${currentPath.startsWith("/modules") ? "active" : ""}`}
-            onClick={() => navigate("/modules")}
+            onClick={() => navigate("/admin/modules")}
           >
             Modules
           </button>

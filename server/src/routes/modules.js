@@ -18,6 +18,17 @@ const { requireAuth } = require("../middleware/auth");
     ]
   }
 */
+const User = require("../models/User");
+
+async function assertAdmin(req, res) {
+  const user = await User.findById(req.user.userId).select("role");
+  if (!user || user.role !== "admin") {
+    res.status(403).json({ message: "Admin only" });
+    return false;
+  }
+  return true;
+}
+
 
 // ✅ CREATE MODULE (Draft allowed, Publish validated)
 router.post("/", requireAuth, async (req, res) => {

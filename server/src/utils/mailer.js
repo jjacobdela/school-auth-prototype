@@ -7,19 +7,27 @@ const transport = nodemailer.createTransport(
   })
 );
 
-async function sendTrainingInviteEmail({ to, fullName, moduleTitle, inviteLink }) {
-  const emailTo = String(to || "").trim();
-  if (!emailTo) throw new Error("Missing recipient email (to).");
-
+async function sendTrainingInviteEmail({
+  to,
+  fullName,
+  moduleTitle,
+  inviteLink,
+  tempPassword
+}) {
   return transport.sendMail({
     from: '"Training Portal" <hello@demomailtrap.co>',
-    to: emailTo,
-    subject: "Training Module Access",
+    to,
+    subject: "Your Training Account",
     text:
       `Hi ${fullName},\n\n` +
-      `You have been granted access to the module: ${moduleTitle}\n\n` +
-      `Access your account here:\n${inviteLink}\n\n`,
+      `You now have access to: ${moduleTitle}\n\n` +
+      (tempPassword
+        ? `Your temporary login credentials:\nEmail: ${to}\nPassword: ${tempPassword}\n\n`
+        : `Use your existing account to login.\n\n`) +
+      `Login here:\n${inviteLink}\n\n` +
+      `Please change your password after logging in.\n`,
   });
+
 }
 
 module.exports = { sendTrainingInviteEmail };
