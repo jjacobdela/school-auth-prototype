@@ -119,7 +119,7 @@ function summarizeQuestions(questions) {
 export default function ExamCreation() {
   const navigate = useNavigate();
 
-  const [theme, setTheme] = useState("corporate");
+  const [theme, setTheme] = useState("school");
 
   // MODES
   // "published" = list published exams only

@@ -73,7 +73,7 @@ function generateTempPassword() {
 export default function UserManagement() {
   const navigate = useNavigate();
 
-  const [theme, setTheme] = useState("corporate");
+  const [theme, setTheme] = useState("school");
 
   const [loading, setLoading] = useState(true);
   const [viewer, setViewer] = useState(null);

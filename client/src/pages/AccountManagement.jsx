@@ -47,7 +47,7 @@ async function apiPatch(path, body) {
 export default function AccountManagement() {
   const navigate = useNavigate();
 
-  const [theme, setTheme] = useState("corporate");
+  const [theme, setTheme] = useState("school");
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);

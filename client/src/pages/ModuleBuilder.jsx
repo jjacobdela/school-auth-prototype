@@ -64,7 +64,7 @@ useEffect(() => {
 
   const navigate = useNavigate();
 
-  const [theme, setTheme] = useState("corporate");
+  const [theme, setTheme] = useState("school");
 
   const [moduleTitle, setModuleTitle] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
