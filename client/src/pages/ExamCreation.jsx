@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   createExam,
   listPublishedExams,
@@ -116,15 +116,34 @@ function summarizeQuestions(questions) {
   return { total, mc, tf, nar };
 }
 
+function createSuggestedExamTitle(moduleTitle) {
+  const cleanTitle = (moduleTitle || "").trim();
+  return cleanTitle ? `${cleanTitle} Final Exam` : "";
+}
+
+function buildModuleBuilderUrl(moduleId, examId) {
+  if (!moduleId) return "/modules";
+
+  const params = new URLSearchParams();
+  if (examId) params.set("examId", examId);
+
+  const query = params.toString();
+  return query ? `/modules/${moduleId}/edit?${query}` : `/modules/${moduleId}/edit`;
+}
+
 export default function ExamCreation() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const routeModuleId = searchParams.get("moduleId") || "";
+  const routeModuleTitle = searchParams.get("moduleTitle") || "";
+  const routeExamId = searchParams.get("examId") || "";
 
-  const [theme, setTheme] = useState("school");
+  const [theme] = useState("corporate");
 
   // MODES
   // "published" = list published exams only
   // "builder" = exam creation UI only
-  const [viewMode, setViewMode] = useState("published");
+  const [viewMode, setViewMode] = useState(() => (routeModuleId || routeExamId ? "builder" : "published"));
 
   const [examTitle, setExamTitle] = useState("");
   const [department, setDepartment] = useState(DEPARTMENT_OPTIONS[0]);
@@ -155,7 +174,11 @@ export default function ExamCreation() {
 
   // Editing a published exam
   const [editingExamId, setEditingExamId] = useState(null);
+  const [linkedModuleId, setLinkedModuleId] = useState(routeModuleId);
   const isEditing = Boolean(editingExamId);
+  const moduleFlowActive = Boolean(routeModuleId);
+  const hasLinkedModule = Boolean(linkedModuleId || routeModuleId);
+  const moduleContextTitle = (routeModuleTitle || "").trim();
 
   const totalQuestions = questions.length;
 
@@ -179,8 +202,19 @@ export default function ExamCreation() {
 
   useEffect(() => {
     refreshPublished();
-    setViewMode("published");
   }, []);
+
+  useEffect(() => {
+    if (!routeModuleId && !routeExamId) return;
+    setViewMode("builder");
+  }, [routeExamId, routeModuleId]);
+
+  useEffect(() => {
+    if (!routeModuleId || routeExamId) return;
+
+    setLinkedModuleId(routeModuleId);
+    setExamTitle((current) => current.trim() || createSuggestedExamTitle(routeModuleTitle));
+  }, [routeExamId, routeModuleId, routeModuleTitle]);
 
   const isValid = useMemo(() => {
     if (!examTitle.trim()) return false;
@@ -274,14 +308,15 @@ export default function ExamCreation() {
     setConfirmClearAll(false);
   }
 
-  function resetBuilderStateOnly() {
+  function resetBuilderStateOnly({ keepRouteModuleContext = false } = {}) {
     setEditingExamId(null);
     setCurrentDraftId(null);
-    setExamTitle("");
+    setExamTitle(keepRouteModuleContext ? createSuggestedExamTitle(routeModuleTitle) : "");
     setDepartment(DEPARTMENT_OPTIONS[0]);
     setDurationMinutes(30);
     setNewQuestionType("multiple_choice");
     setQuestions([]);
+    setLinkedModuleId(keepRouteModuleContext ? routeModuleId : "");
 
     setDraftsOpen(false);
     setDraftToDelete(null);
@@ -289,16 +324,22 @@ export default function ExamCreation() {
   }
 
   function startNewDraftNoPrompt() {
-    resetBuilderStateOnly();
+    resetBuilderStateOnly({ keepRouteModuleContext: Boolean(routeModuleId) });
     setViewMode("builder");
   }
 
   function handleBack() {
     if (viewMode === "builder") {
+      const destinationLabel = moduleFlowActive ? "Module Builder" : "Published Exams";
       const ok = window.confirm(
-        "Before leaving the Exam Builder:\n\n• Make sure you saved your draft if you want to keep changes.\n\nGo back to Published Exams?"
+        `Before leaving the Exam Builder:\n\n• Make sure you saved your draft if you want to keep changes.\n\nGo back to ${destinationLabel}?`
       );
       if (!ok) return;
+
+      if (moduleFlowActive) {
+        navigate(buildModuleBuilderUrl(routeModuleId, editingExamId || routeExamId));
+        return;
+      }
 
       resetBuilderStateOnly();
       setViewMode("published");
@@ -315,7 +356,8 @@ export default function ExamCreation() {
       examTitle: examTitle.trim(),
       department: department.trim(),
       durationMinutes: Number(durationMinutes),
-      questions
+      questions,
+      linkedModuleId: linkedModuleId || routeModuleId || ""
     };
 
     const drafts = readDrafts();
@@ -355,10 +397,11 @@ export default function ExamCreation() {
 
     setEditingExamId(null);
 
-    setExamTitle(p.examTitle || "");
+    setExamTitle(p.examTitle || createSuggestedExamTitle(routeModuleTitle));
     setDepartment(p.department || DEPARTMENT_OPTIONS[0]);
     setDurationMinutes(p.durationMinutes || 30);
-    setQuestions(Array.isArray(p.questions) ? p.questions : []);
+    setQuestions(normalizeQuestions(p.questions || []));
+    setLinkedModuleId(p.linkedModuleId || routeModuleId || "");
 
     setCurrentDraftId(found.id);
     setDraftsOpen(false);
@@ -389,30 +432,49 @@ export default function ExamCreation() {
     alert("All drafts cleared.");
   }
 
-  async function onEditPublishedExam(id) {
+  function applyExamToBuilder(exam) {
+    setEditingExamId(exam._id);
+    setCurrentDraftId(null);
+
+    setExamTitle(exam.examTitle || createSuggestedExamTitle(routeModuleTitle));
+    setDepartment(exam.department || DEPARTMENT_OPTIONS[0]);
+    setDurationMinutes(exam.durationMinutes || 30);
+    setQuestions(normalizeQuestions(exam.questions || []));
+    setLinkedModuleId(exam.linkedModuleId || routeModuleId || "");
+
+    setViewMode("builder");
+  }
+
+  async function loadExamIntoBuilder(id, { suppressAlert = false } = {}) {
     try {
       const data = await getExamById(id);
       const exam = data?.exam;
       if (!exam) {
-        alert("Exam not found.");
+        if (!suppressAlert) {
+          alert("Exam not found.");
+        }
         return;
       }
 
-      setEditingExamId(exam._id);
-      setCurrentDraftId(null);
-
-      setExamTitle(exam.examTitle || "");
-      setDepartment(exam.department || DEPARTMENT_OPTIONS[0]);
-      setDurationMinutes(exam.durationMinutes || 30);
-      setQuestions(normalizeQuestions(exam.questions || []));
-
-      setViewMode("builder");
+      applyExamToBuilder(exam);
 
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      alert(err?.message || "Failed to load exam");
+      if (!suppressAlert) {
+        alert(err?.message || "Failed to load exam");
+      }
     }
   }
+
+  async function onEditPublishedExam(id) {
+    await loadExamIntoBuilder(id);
+  }
+
+  useEffect(() => {
+    if (!routeExamId) return;
+
+    loadExamIntoBuilder(routeExamId, { suppressAlert: true });
+  }, [routeExamId]);
 
   async function onDeletePublishedExam(id) {
     const ok = window.confirm("Delete this published exam? This cannot be undone.");
@@ -438,23 +500,35 @@ export default function ExamCreation() {
       department: department.trim(),
       durationMinutes: Number(durationMinutes),
       status: "published",
-      questions
+      questions,
+      linkedModuleId: linkedModuleId || routeModuleId || null
     };
 
     try {
       setPublishing(true);
+      let savedExamId = "";
+      const redirectModuleId = routeModuleId;
 
       if (editingExamId) {
         const result = await updateExamById(editingExamId, payload);
-        const examId = result?.exam?._id || editingExamId;
-        alert(`Updated published exam. (Exam ID: ${examId})`);
+        savedExamId = result?.exam?._id || editingExamId;
+        if (!redirectModuleId) {
+          alert(`Updated published exam. (Exam ID: ${savedExamId})`);
+        }
       } else {
         const result = await createExam(payload);
-        const examId = result?.exam?._id || result?.exam?.id || "unknown";
-        alert(`Published! Saved to MongoDB. (Exam ID: ${examId})`);
+        savedExamId = result?.exam?._id || result?.exam?.id || "unknown";
+        if (!redirectModuleId) {
+          alert(`Published! Saved to MongoDB. (Exam ID: ${savedExamId})`);
+        }
       }
 
       await refreshPublished();
+
+      if (redirectModuleId && savedExamId) {
+        navigate(buildModuleBuilderUrl(redirectModuleId, savedExamId));
+        return;
+      }
 
       resetBuilderStateOnly();
       setViewMode("published");
@@ -548,14 +622,6 @@ export default function ExamCreation() {
         </div>
 
         <div className="appHeaderRight">
-          <label className="themePickerLabel">
-            Theme
-            <select className="themePicker" value={theme} onChange={(e) => setTheme(e.target.value)}>
-              <option value="corporate">A — Corporate Light</option>
-              <option value="school">C — School Branded</option>
-            </select>
-          </label>
-
           <div className="headerActionsWrap">
             <div className="headerActionsGroup headerActionsGroupLeft">
               <button className="navButton" onClick={handleBack}>
@@ -769,11 +835,12 @@ export default function ExamCreation() {
                     <div className="publishedCard" key={ex._id}>
                       <div className="publishedTop">
                         <div className="publishedTitle">{ex.examTitle}</div>
-                        <div className="publishedMeta">
-                          <span className="drawerPill">Dept: {ex.department}</span>
-                          <span className="drawerPill">{ex.durationMinutes} min</span>
-                        </div>
+                      <div className="publishedMeta">
+                        <span className="drawerPill">Dept: {ex.department}</span>
+                        <span className="drawerPill">{ex.durationMinutes} min</span>
+                        {ex.linkedModuleId ? <span className="drawerPill">Linked to module</span> : null}
                       </div>
+                    </div>
 
                       <div className="publishedTime">
                         Updated: {ex.updatedAt ? new Date(ex.updatedAt).toLocaleString() : "Unknown"}
@@ -813,6 +880,25 @@ export default function ExamCreation() {
                 </div>
               </div>
 
+              {moduleFlowActive ? (
+                <div className="moduleContextBanner">
+                  <div className="moduleContextBannerCopy">
+                    <div className="moduleContextBannerTitle">Final assessment for {moduleContextTitle || "this module"}</div>
+                    <div className="moduleContextBannerText">
+                      This exam is part of the module-building flow. When you publish it, you will return to the module builder with the exam linked automatically.
+                    </div>
+                  </div>
+
+                  <button
+                    className="navButton"
+                    type="button"
+                    onClick={() => navigate(buildModuleBuilderUrl(routeModuleId, editingExamId || routeExamId))}
+                  >
+                    Back to Module
+                  </button>
+                </div>
+              ) : null}
+
               <div className="section">
                 <div className="sectionHeader">
                   <div className="sectionTitle">Exam Details</div>
@@ -846,6 +932,14 @@ export default function ExamCreation() {
                       onChange={(e) => setDurationMinutes(e.target.value)}
                     />
                   </label>
+
+                  {hasLinkedModule ? (
+                    <div className="examContextCard">
+                      <div className="examContextLabel">Linked Module</div>
+                      <div className="examContextValue">{moduleContextTitle || "Linked module"}</div>
+                      <div className="examContextHint">This assessment will appear as the final exam at the end of the module.</div>
+                    </div>
+                  ) : null}
 
                   <div className="examStats">
                     <div className="examStatItem">

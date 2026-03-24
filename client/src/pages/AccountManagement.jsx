@@ -47,7 +47,7 @@ async function apiPatch(path, body) {
 export default function AccountManagement() {
   const navigate = useNavigate();
 
-  const [theme, setTheme] = useState("school");
+  const [theme] = useState("corporate");
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -190,7 +190,7 @@ export default function AccountManagement() {
       }
 
       setSavingProfile(true);
-      await apiPatch("http://localhost:5003/api/auth/profile", { fullName: nextName });
+      await apiPatch(`${import.meta.env.VITE_API_URL || "http://localhost:5002"}/api/auth/profile`, { fullName: nextName });
 
       await refreshMe();
       setEditingName(false);
@@ -236,7 +236,7 @@ export default function AccountManagement() {
 
       setSavingPassword(true);
 
-      await apiPatch("http://localhost:5003/api/auth/password", {
+      await apiPatch(`${import.meta.env.VITE_API_URL || "http://localhost:5002"}/api/auth/password`, {
         currentPassword: currentPassword.trim(),
         newPassword: newPassword.trim()
       });
@@ -298,14 +298,6 @@ export default function AccountManagement() {
         </div>
 
         <div className="accountHeaderRight">
-          <label className="themePickerLabel">
-            Theme
-            <select className="themePicker" value={theme} onChange={(e) => setTheme(e.target.value)}>
-              <option value="corporate">A — Corporate Light</option>
-              <option value="school">C — School Branded</option>
-            </select>
-          </label>
-
           <div className="headerActions">
             <button className="navButton" type="button" onClick={() => navigate(backRoute)}>
               Back

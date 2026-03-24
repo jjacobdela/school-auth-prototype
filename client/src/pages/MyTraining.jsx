@@ -1,21 +1,52 @@
-export default function MyTraining({ contents }) {
+import React from "react";
+import "../styles/form.css";
+import "../styles/themes.css";
+import "../styles/examCreation.css";
+
+export default function MyTraining({ contents = [] }) {
   return (
-    <>
-      <h2>My Training</h2>
+    <div className="examPage">
+      <header className="appHeader">
+        <div className="appHeaderLeft">
+          <div className="brandMark">TR</div>
+          <div className="brandText">
+            <div className="brandTitle">My Training</div>
+            <div className="brandSubtitle">Files and training content assigned to your account.</div>
+          </div>
+        </div>
+      </header>
 
-      {contents.map((c) => (
-        <div key={c._id}>
-          <h4>{c.title}</h4>
+      <div className="examContent">
+        <div className="examCard">
+          {contents.length === 0 ? (
+            <div className="emptyState">
+              <div className="emptyTitle">No training content yet</div>
+              <div className="emptyText">Assigned modules and supporting files will appear here when available.</div>
+            </div>
+          ) : (
+            contents.map((c) => (
+              <div key={c._id} className="section">
+                <div className="sectionHeader">
+                  <div className="sectionTitle">{c.title}</div>
+                </div>
 
-          {c.type === "text" && <p>{c.textContent}</p>}
+                {c.type === "text" && <div className="hintBox">{c.textContent}</div>}
 
-          {c.fileUrl && (
-            <a href={`http://localhost:5003${c.fileUrl}`} target="_blank">
-              Open File
-            </a>
+                {c.fileUrl && (
+                  <a
+                    className="navButton"
+                    href={`${import.meta.env.VITE_API_URL || "http://localhost:5002"}${c.fileUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open File
+                  </a>
+                )}
+              </div>
+            ))
           )}
         </div>
-      ))}
-    </>
+      </div>
+    </div>
   );
 }

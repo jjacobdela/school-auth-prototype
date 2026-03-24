@@ -1,466 +1,896 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { listPublishedExams } from "../api/exams";
 import { createModule, getModule, updateModule } from "../api/modules";
-import { useNavigate, useParams } from "react-router-dom";
 import "../styles/form.css";
 import "../styles/themes.css";
 import "../styles/examCreation.css";
+import "../styles/moduleBuilder.css";
 
-function createEmptyPage(type) {
+const ITEM_TYPE_META = {
+  text: {
+    label: "Text",
+    helper: "Use for written instructions, learning notes, or lesson copy.",
+    placeholder: "Write the lesson content here."
+  },
+  video: {
+    label: "Video",
+    helper: "Paste a hosted video link for this lesson resource.",
+    placeholder: "https://example.com/video"
+  },
+  pdf: {
+    label: "PDF",
+    helper: "Paste a document link for manuals, handouts, or reading material.",
+    placeholder: "https://example.com/document.pdf"
+  }
+};
+
+function buildLessonTitle(index) {
+  return `Lesson ${index + 1}`;
+}
+
+function buildItemTitle(type, index) {
+  const label = ITEM_TYPE_META[type]?.label || "Resource";
+  return `${label} ${index + 1}`;
+}
+
+function createEmptyItem(type, index) {
   return {
     id: crypto.randomUUID(),
-    title: "",
+    title: buildItemTitle(type, index),
     type,
-    content: {}
+    content: type === "text" ? { text: "" } : { url: "" }
   };
 }
 
-function reorderByIds(list, sourceId, targetId) {
-  if (!sourceId || !targetId || sourceId === targetId) return list;
+function createEmptyLesson(index) {
+  return {
+    id: crypto.randomUUID(),
+    title: buildLessonTitle(index),
+    summary: "",
+    items: [createEmptyItem("text", 0)]
+  };
+}
 
-  const sourceIndex = list.findIndex((p) => p.id === sourceId);
-  const targetIndex = list.findIndex((p) => p.id === targetId);
-  if (sourceIndex === -1 || targetIndex === -1) return list;
+function normalizeItem(item = {}, index = 0) {
+  const type = ITEM_TYPE_META[item?.type] ? item.type : "text";
+
+  return {
+    id: crypto.randomUUID(),
+    title: item?.title || buildItemTitle(type, index),
+    type,
+    content: type === "text" ? { text: item?.content?.text || "" } : { url: item?.content?.url || "" }
+  };
+}
+
+function normalizeLesson(lesson = {}, index = 0) {
+  const items = Array.isArray(lesson?.items) ? lesson.items.map((item, itemIndex) => normalizeItem(item, itemIndex)) : [];
+
+  return {
+    id: crypto.randomUUID(),
+    title: lesson?.title || buildLessonTitle(index),
+    summary: lesson?.summary || "",
+    items
+  };
+}
+
+function getItemIssues(item) {
+  const issues = [];
+
+  if (!item?.title?.trim()) {
+    issues.push("Add a resource title");
+  }
+
+  if (item?.type === "text") {
+    if (!item?.content?.text?.trim()) {
+      issues.push("Add text content");
+    }
+  } else if (!item?.content?.url?.trim()) {
+    issues.push(`Add a ${ITEM_TYPE_META[item?.type]?.label?.toLowerCase() || "resource"} URL`);
+  }
+
+  return issues;
+}
+
+function getLessonIssues(lesson) {
+  const issues = [];
+
+  if (!lesson?.title?.trim()) {
+    issues.push("Add a lesson title");
+  }
+
+  if (!Array.isArray(lesson?.items) || lesson.items.length === 0) {
+    issues.push("Add at least one learning resource");
+  }
+
+  return issues;
+}
+
+function moveItem(list, fromIndex, toIndex) {
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex || toIndex >= list.length) {
+    return list;
+  }
 
   const next = [...list];
-  const [moved] = next.splice(sourceIndex, 1);
-  next.splice(targetIndex, 0, moved);
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
   return next;
 }
 
-export default function ModuleBuilderAdvanced() {
-  const { id } = useParams();
-const isEditMode = Boolean(id);
-useEffect(() => {
-  if (!isEditMode) return;
-
-  async function load() {
-    try {
-      setError("");
-      const res = await getModule(id);
-      const m = res.data;
-
-      setModuleTitle(m.title || "");
-      setModuleDescription(m.description || "");
-      setUiStatus((m.status || "draft").toLowerCase());
-
-      const mapped = (m.pages || []).map((p) => ({
-        id: crypto.randomUUID(),
-        title: p.title || "",
-        type: p.type,
-        content: p.content || {}
-      }));
-
-      setPages(mapped);
-      setActivePageId(mapped[0]?.id || null);
-    } catch (err) {
-      console.error("LOAD MODULE ERROR:", err);
-      setError(err?.response?.data?.message || "Failed to load module");
-    }
-  }
-
-  load();
-}, [id, isEditMode]);
-
+export default function ModuleBuilder() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const isEditMode = Boolean(id);
 
-  const [theme, setTheme] = useState("school");
+  const routeExamId = searchParams.get("examId") || "";
 
   const [moduleTitle, setModuleTitle] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
+  const [lessons, setLessons] = useState([]);
+  const [activeLessonId, setActiveLessonId] = useState(null);
+  const [activeItemId, setActiveItemId] = useState(null);
+  const [newItemType, setNewItemType] = useState("text");
+  const [linkedExamId, setLinkedExamId] = useState("");
+  const [publishedExams, setPublishedExams] = useState([]);
+  const [uiStatus, setUiStatus] = useState("draft");
 
-  const [pages, setPages] = useState([]);
-  const [activePageId, setActivePageId] = useState(null);
-  const [newPageType, setNewPageType] = useState("video");
-
+  const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
+  const [examsLoading, setExamsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const [uiStatus, setUiStatus] = useState("draft"); // "draft" | "published"
-
-  // Drag state
-  const [draggingId, setDraggingId] = useState(null);
-  const [dragOverId, setDragOverId] = useState(null);
-  const dragStartIndexRef = useRef(-1);
-
-  const activePage = pages.find((p) => p.id === activePageId);
-
-  /* ---------------- PAGE ACTIONS ---------------- */
-
-  function addPage() {
-    const page = createEmptyPage(newPageType);
-    setPages((prev) => [...prev, page]);
-    setActivePageId(page.id);
+  async function loadPublishedExams() {
+    try {
+      setExamsLoading(true);
+      const data = await listPublishedExams();
+      setPublishedExams(Array.isArray(data?.exams) ? data.exams : []);
+    } catch (err) {
+      console.error("LOAD EXAMS ERROR:", err);
+      setPublishedExams([]);
+    } finally {
+      setExamsLoading(false);
+    }
   }
 
-  function removePage(pageId) {
-    const next = pages.filter((p) => p.id !== pageId);
-    setPages(next);
-    if (activePageId === pageId) setActivePageId(next[0]?.id || null);
-  }
+  useEffect(() => {
+    loadPublishedExams();
+  }, []);
 
-  function updatePage(pageId, patch) {
-    setPages((prev) =>
-      prev.map((p) => (p.id === pageId ? { ...p, ...patch } : p))
+  useEffect(() => {
+    if (!isEditMode) {
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
+
+    async function loadModule() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const res = await getModule(id);
+        const moduleData = res?.data || {};
+        if (!mounted) return;
+
+        const normalizedLessons = Array.isArray(moduleData?.lessons)
+          ? moduleData.lessons.map((lesson, lessonIndex) => normalizeLesson(lesson, lessonIndex))
+          : [];
+
+        setModuleTitle(moduleData?.title || "");
+        setModuleDescription(moduleData?.description || "");
+        setLessons(normalizedLessons);
+        setUiStatus((moduleData?.status || "draft").toLowerCase());
+        setLinkedExamId(moduleData?.finalExamId || "");
+        setActiveLessonId(normalizedLessons[0]?.id || null);
+        setActiveItemId(normalizedLessons[0]?.items?.[0]?.id || null);
+      } catch (err) {
+        console.error("LOAD MODULE ERROR:", err);
+        if (!mounted) return;
+        setError(err?.response?.data?.message || "Failed to load module");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    loadModule();
+    return () => {
+      mounted = false;
+    };
+  }, [id, isEditMode]);
+
+  useEffect(() => {
+    if (!routeExamId) return;
+    setLinkedExamId(routeExamId);
+    setNotice("Final exam linked. Save or publish the module to keep the connection.");
+  }, [routeExamId]);
+
+  useEffect(() => {
+    if (activeLessonId && lessons.some((lesson) => lesson.id === activeLessonId)) {
+      return;
+    }
+
+    const firstLesson = lessons[0] || null;
+    setActiveLessonId(firstLesson?.id || null);
+    setActiveItemId(firstLesson?.items?.[0]?.id || null);
+  }, [activeLessonId, lessons]);
+
+  const activeLessonIndex = lessons.findIndex((lesson) => lesson.id === activeLessonId);
+  const activeLesson = activeLessonIndex >= 0 ? lessons[activeLessonIndex] : null;
+  const activeItemIndex = activeLesson?.items?.findIndex((item) => item.id === activeItemId) ?? -1;
+  const activeItem = activeItemIndex >= 0 ? activeLesson.items[activeItemIndex] : null;
+
+  useEffect(() => {
+    if (!activeLesson) {
+      setActiveItemId(null);
+      return;
+    }
+
+    if (activeItemId && activeLesson.items.some((item) => item.id === activeItemId)) {
+      return;
+    }
+
+    setActiveItemId(activeLesson.items[0]?.id || null);
+  }, [activeItemId, activeLesson]);
+
+  const lessonAudits = useMemo(
+    () =>
+      lessons.map((lesson) => ({
+        lessonId: lesson.id,
+        lessonIssues: getLessonIssues(lesson),
+        itemAudits: lesson.items.map((item) => ({
+          itemId: item.id,
+          itemIssues: getItemIssues(item)
+        }))
+      })),
+    [lessons]
+  );
+
+  const completedLessons = lessonAudits.filter(
+    (audit) => audit.lessonIssues.length === 0 && audit.itemAudits.every((itemAudit) => itemAudit.itemIssues.length === 0)
+  ).length;
+
+  const publishIssues = useMemo(() => {
+    const issues = [];
+
+    if (!moduleTitle.trim()) {
+      issues.push("Add a module title");
+    }
+
+    if (lessons.length === 0) {
+      issues.push("Add at least one lesson");
+    }
+
+    lessonAudits.forEach((audit, lessonIndex) => {
+      audit.lessonIssues.forEach((issue) => {
+        issues.push(`Lesson ${lessonIndex + 1}: ${issue}`);
+      });
+
+      audit.itemAudits.forEach((itemAudit, itemIndex) => {
+        itemAudit.itemIssues.forEach((issue) => {
+          issues.push(`Lesson ${lessonIndex + 1}, resource ${itemIndex + 1}: ${issue}`);
+        });
+      });
+    });
+
+    if (!linkedExamId) {
+      issues.push("Link a final exam");
+    }
+
+    return issues;
+  }, [lessonAudits, lessons.length, linkedExamId, moduleTitle]);
+
+  const isComplete = publishIssues.length === 0;
+  const progressPercent = lessons.length === 0 ? 0 : Math.round((completedLessons / lessons.length) * 100);
+
+  const linkedExam = publishedExams.find((exam) => exam._id === linkedExamId) || null;
+
+  function updateLesson(lessonId, updater) {
+    setLessons((prev) =>
+      prev.map((lesson) => {
+        if (lesson.id !== lessonId) return lesson;
+
+        if (typeof updater === "function") {
+          return updater(lesson);
+        }
+
+        return { ...lesson, ...updater };
+      })
     );
   }
 
-  async function handleFileUpload(pageId, file) {
-    // ⚠️ TEMP: replace with real upload later
-    const fakeUrl = URL.createObjectURL(file);
-    updatePage(pageId, { content: { url: fakeUrl } });
+  function updateLessonItem(lessonId, itemId, updater) {
+    updateLesson(lessonId, (lesson) => ({
+      ...lesson,
+      items: lesson.items.map((item) => {
+        if (item.id !== itemId) return item;
+
+        if (typeof updater === "function") {
+          return updater(item);
+        }
+
+        return { ...item, ...updater };
+      })
+    }));
   }
 
-  /* ---------------- VALIDATION (ONLY FOR PUBLISH) ---------------- */
-
-  const isComplete = useMemo(() => {
-    if (!moduleTitle.trim()) return false;
-    if (pages.length === 0) return false;
-
-    for (const p of pages) {
-      if (!p.title.trim()) return false;
-      if (p.type === "text" && !p.content?.text?.trim()) return false;
-      if (p.type !== "text" && !p.content?.url) return false;
-    }
-    return true;
-  }, [moduleTitle, pages]);
-
-  /* ---------------- DRAG & DROP ---------------- */
-
-  function onDragStart(e, pageId, index) {
-    setDraggingId(pageId);
-    setDragOverId(null);
-    dragStartIndexRef.current = index;
-
-    e.dataTransfer.setData("text/plain", pageId);
-    e.dataTransfer.effectAllowed = "move";
+  function addLesson() {
+    const lesson = createEmptyLesson(lessons.length);
+    setLessons((prev) => [...prev, lesson]);
+    setActiveLessonId(lesson.id);
+    setActiveItemId(lesson.items[0]?.id || null);
+    setNotice("");
   }
 
-  function onDragOver(e, pageId) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverId(pageId);
+  function removeLesson(lessonId) {
+    const currentIndex = lessons.findIndex((lesson) => lesson.id === lessonId);
+    if (currentIndex === -1) return;
+
+    const nextLessons = lessons.filter((lesson) => lesson.id !== lessonId);
+    const fallbackLesson = nextLessons[currentIndex] || nextLessons[currentIndex - 1] || nextLessons[0] || null;
+
+    setLessons(nextLessons);
+    setActiveLessonId(fallbackLesson?.id || null);
+    setActiveItemId(fallbackLesson?.items?.[0]?.id || null);
+    setNotice("");
   }
 
-  function onDrop(e, pageId) {
-    e.preventDefault();
-    const sourceId = draggingId || e.dataTransfer.getData("text/plain");
-    const targetId = pageId;
+  function duplicateLesson(lessonId) {
+    const sourceIndex = lessons.findIndex((lesson) => lesson.id === lessonId);
+    if (sourceIndex === -1) return;
 
-    setPages((prev) => reorderByIds(prev, sourceId, targetId));
+    const source = lessons[sourceIndex];
+    const copy = {
+      ...source,
+      id: crypto.randomUUID(),
+      title: `${source.title || buildLessonTitle(sourceIndex)} Copy`,
+      items: source.items.map((item) => ({
+        ...item,
+        id: crypto.randomUUID(),
+        content: { ...(item.content || {}) }
+      }))
+    };
 
-    setDraggingId(null);
-    setDragOverId(null);
-    dragStartIndexRef.current = -1;
+    setLessons((prev) => {
+      const next = [...prev];
+      next.splice(sourceIndex + 1, 0, copy);
+      return next;
+    });
+    setActiveLessonId(copy.id);
+    setActiveItemId(copy.items[0]?.id || null);
+    setNotice("");
   }
 
-  function onDragEnd() {
-    setDraggingId(null);
-    setDragOverId(null);
-    dragStartIndexRef.current = -1;
+  function moveLesson(lessonId, direction) {
+    const currentIndex = lessons.findIndex((lesson) => lesson.id === lessonId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    setLessons((prev) => moveItem(prev, currentIndex, targetIndex));
+    setNotice("");
   }
 
-  /* ---------------- SAVE / PUBLISH ---------------- */
+  function addItemToLesson() {
+    if (!activeLesson) return;
+
+    const nextItem = createEmptyItem(newItemType, activeLesson.items.length);
+    updateLesson(activeLesson.id, (lesson) => ({
+      ...lesson,
+      items: [...lesson.items, nextItem]
+    }));
+    setActiveItemId(nextItem.id);
+    setNotice("");
+  }
+
+  function duplicateItem(itemId) {
+    if (!activeLesson) return;
+
+    const sourceIndex = activeLesson.items.findIndex((item) => item.id === itemId);
+    if (sourceIndex === -1) return;
+
+    const source = activeLesson.items[sourceIndex];
+    const copy = {
+      ...source,
+      id: crypto.randomUUID(),
+      title: `${source.title || buildItemTitle(source.type, sourceIndex)} Copy`,
+      content: { ...(source.content || {}) }
+    };
+
+    updateLesson(activeLesson.id, (lesson) => {
+      const nextItems = [...lesson.items];
+      nextItems.splice(sourceIndex + 1, 0, copy);
+      return { ...lesson, items: nextItems };
+    });
+    setActiveItemId(copy.id);
+    setNotice("");
+  }
+
+  function removeItem(itemId) {
+    if (!activeLesson) return;
+
+    const currentIndex = activeLesson.items.findIndex((item) => item.id === itemId);
+    if (currentIndex === -1) return;
+
+    const nextItems = activeLesson.items.filter((item) => item.id !== itemId);
+    const fallbackItem = nextItems[currentIndex] || nextItems[currentIndex - 1] || nextItems[0] || null;
+
+    updateLesson(activeLesson.id, (lesson) => ({
+      ...lesson,
+      items: nextItems
+    }));
+    setActiveItemId(fallbackItem?.id || null);
+    setNotice("");
+  }
+
+  function moveLessonItem(itemId, direction) {
+    if (!activeLesson) return;
+
+    const currentIndex = activeLesson.items.findIndex((item) => item.id === itemId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    updateLesson(activeLesson.id, (lesson) => ({
+      ...lesson,
+      items: moveItem(lesson.items, currentIndex, targetIndex)
+    }));
+    setNotice("");
+  }
 
   function buildPayload(nextStatus) {
     return {
-      title: moduleTitle || "", // drafts can be blank
-      description: moduleDescription || "",
+      title: moduleTitle.trim(),
+      description: moduleDescription.trim(),
       status: nextStatus,
-      pages: pages.map(({ id, ...page }) => ({
-        ...page,
-        content: page.content || {}
+      finalExamId: linkedExamId || null,
+      lessons: lessons.map((lesson) => ({
+        title: lesson.title.trim(),
+        summary: lesson.summary.trim(),
+        items: lesson.items.map((item) => ({
+          title: item.title.trim(),
+          type: item.type,
+          content:
+            item.type === "text"
+              ? { text: item.content?.text?.trim() || "" }
+              : { url: item.content?.url?.trim() || "" }
+        }))
       }))
     };
   }
 
-  // ✅ Save Draft: ALWAYS allowed
-  async function saveDraft() {
+  async function persistModule(nextStatus, { openExamBuilder = false } = {}) {
     if (saving) return;
-
-    setSaving(true);
-    setError("");
+    if (nextStatus === "published" && !isComplete) return;
 
     try {
-      const payload = buildPayload("draft");
-      await createModule(payload);
-      setUiStatus("draft");
-      navigate("/modules");
+      setSaving(true);
+      setError("");
+      setNotice("");
+
+      const payload = buildPayload(nextStatus);
+      const res = isEditMode ? await updateModule(id, payload) : await createModule(payload);
+      const saved = res?.data || {};
+      const savedModuleId = saved?._id || id;
+
+      setUiStatus((saved?.status || nextStatus || "draft").toLowerCase());
+      setLinkedExamId(saved?.finalExamId || payload.finalExamId || "");
+
+      if (openExamBuilder && savedModuleId) {
+        const params = new URLSearchParams();
+        params.set("moduleId", savedModuleId);
+        params.set("moduleTitle", saved?.title || payload.title || "Untitled module");
+        if (saved?.finalExamId || payload.finalExamId) {
+          params.set("examId", saved?.finalExamId || payload.finalExamId);
+        }
+        navigate(`/exam-creation?${params.toString()}`);
+        return;
+      }
+
+      setNotice(nextStatus === "published" ? "Module published successfully." : "Draft saved successfully.");
+
+      if (!isEditMode && savedModuleId) {
+        navigate(`/modules/${savedModuleId}/edit`, { replace: true });
+      }
     } catch (err) {
-      console.error("SAVE DRAFT ERROR:", err);
-      setError(err?.response?.data?.message || "Failed to save draft");
+      console.error("MODULE SAVE ERROR:", err);
+      setError(err?.response?.data?.message || "Failed to save module");
     } finally {
       setSaving(false);
     }
   }
 
-  // ✅ Publish: only allowed if complete
-  async function publishModule() {
-    if (!isComplete || saving) return;
-
-    setSaving(true);
-    setError("");
-
-    try {
-      const payload = buildPayload("published");
-      await createModule(payload);
-      setUiStatus("published");
-      navigate("/modules");
-    } catch (err) {
-      console.error("PUBLISH ERROR:", err);
-      setError(err?.response?.data?.message || "Failed to publish module");
-    } finally {
-      setSaving(false);
-    }
+  if (loading) {
+    return (
+      <div className="moduleBuilderPage">
+        <div className="moduleBuilderSkeletonCard">Loading module builder...</div>
+      </div>
+    );
   }
 
-  /* ---------------- UI ---------------- */
-
-  const statusLabel = uiStatus === "published" ? "Published" : "Draft";
-  const statusChipClass = uiStatus === "published" ? "ready" : "incomplete";
-
-return (
-  <div className="examPage">
-
-    {/* HEADER */}
-    <header className="appHeader">
-      <div className="appHeaderLeft">
-        <div className="brandMark">MB</div>
-        <div className="brandText">
-          <div className="brandTitle">Module Builder</div>
-          <div className="brandSubtitle">Create learning modules</div>
+  return (
+    <div className="moduleBuilderPage">
+      <section className="moduleBuilderHero">
+        <div className="moduleBuilderHeroCopy">
+          <div className="moduleBuilderEyebrow">{isEditMode ? "Edit Course Module" : "New Course Module"}</div>
+          <h1 className="moduleBuilderTitle">{moduleTitle.trim() || "Untitled module"}</h1>
+          <p className="moduleBuilderSubtitle">
+            Build a module with lessons, attach learning resources under each lesson, and link a final assessment before publishing.
+          </p>
         </div>
-      </div>
 
-      <div className="appHeaderRight">
-        <button className="navButton" onClick={() => navigate("/modules")}>
-          ← Back
-        </button>
+        <div className="moduleBuilderHeroMeta">
+          <div className={`statusChip ${uiStatus === "published" ? "ready" : "incomplete"}`}>{uiStatus === "published" ? "Published" : "Draft"}</div>
+          <div className="moduleBuilderMetaGrid">
+            <div className="moduleBuilderMetaCard">
+              <div className="moduleBuilderMetaLabel">Lessons</div>
+              <div className="moduleBuilderMetaValue">{lessons.length}</div>
+            </div>
 
-        <button className="navButton" onClick={saveDraft} disabled={saving}>
-          {saving ? "Saving..." : "Save Draft"}
-        </button>
-
-        <button
-          className="navButton primary"
-          disabled={!isComplete || saving}
-          onClick={publishModule}
-        >
-          {saving ? "Saving..." : "Publish"}
-        </button>
-      </div>
-    </header>
-
-
-    {/* WORKSPACE */}
-    <div
-      className="examContent"
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        padding: 16
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 1300,
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr",
-          gap: 16,
-          alignItems: "stretch"
-        }}
-      >
-
-        {/* LEFT COLUMN (STACKED) */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 16
-          }}
-        >
-
-          {/* MODULE DETAILS */}
-          <div className="examCard" style={{ flex: 1 }}>
-            <div className="section">
-              <div className="sectionHeader">
-                <div className="sectionTitle">Module Details</div>
-                <div className={`statusChip ${uiStatus === "published" ? "ready" : "incomplete"}`}>
-                  {uiStatus === "published" ? "Published" : "Draft"}
-                </div>
+            <div className="moduleBuilderMetaCard">
+              <div className="moduleBuilderMetaLabel">Resources</div>
+              <div className="moduleBuilderMetaValue">
+                {lessons.reduce((sum, lesson) => sum + lesson.items.length, 0)}
               </div>
+            </div>
 
-              {error && <div className="error">{error}</div>}
+            <div className="moduleBuilderMetaCard">
+              <div className="moduleBuilderMetaLabel">Progress</div>
+              <div className="moduleBuilderMetaValue">{progressPercent}%</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
+      {error ? <div className="error">{error}</div> : null}
+      {notice ? <div className="moduleBuilderNotice">{notice}</div> : null}
+
+      <div className="moduleBuilderLayout">
+        <div className="moduleBuilderMain">
+          <section className="examCard moduleBuilderCard">
+            <div className="sectionHeader">
+              <div className="sectionTitle">1. Module overview</div>
+              <div className="sectionHint">Name the module or course and explain what teachers or learners should expect.</div>
+            </div>
+
+            <div className="moduleBuilderFieldGrid">
               <label className="label">
-                Module Title
+                Module or Course Title
                 <input
                   className="input"
                   value={moduleTitle}
                   onChange={(e) => setModuleTitle(e.target.value)}
+                  placeholder="Example: Safety Orientation"
                 />
               </label>
 
-              <label className="label">
+              <label className="label moduleBuilderWideField">
                 Description
                 <textarea
                   className="input textarea"
                   rows={4}
                   value={moduleDescription}
                   onChange={(e) => setModuleDescription(e.target.value)}
+                  placeholder="Summarize what this module covers, who it is for, and how the learning is structured."
                 />
               </label>
             </div>
-          </div>
+          </section>
 
-
-          {/* PAGE EDITOR */}
-          <div className="examCard" style={{ flex: 2 }}>
-            <div className="section">
-
-              <div className="sectionHeader">
-                <div className="sectionTitle">Page Editor</div>
-                <div className="sectionHint">
-                  {activePage ? "Editing selected page" : "Select a page on the right"}
-                </div>
-              </div>
-
-              {!activePage ? (
-                <div className="emptyState">
-                  <div className="emptyTitle">No page selected</div>
-                  <div className="emptyText">Click a page to begin editing</div>
-                </div>
-              ) : (
-                <>
-                  <label className="label">
-                    Page Title
-                    <input
-                      className="input"
-                      value={activePage.title}
-                      onChange={(e) =>
-                        updatePage(activePage.id, { title: e.target.value })
-                      }
-                    />
-                  </label>
-
-                  {activePage.type === "text" ? (
-                    <label className="label">
-                      Content
-                      <textarea
-                        className="input textarea"
-                        rows={10}
-                        value={activePage.content?.text || ""}
-                        onChange={(e) =>
-                          updatePage(activePage.id, {
-                            content: { text: e.target.value }
-                          })
-                        }
-                      />
-                    </label>
-                  ) : (
-                    <>
-                      <label className="label">
-                        Upload {activePage.type.toUpperCase()}
-                        <input
-                          type="file"
-                          accept={activePage.type === "video"
-                            ? "video/*"
-                            : "application/pdf"}
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleFileUpload(activePage.id, f);
-                          }}
-                        />
-                      </label>
-
-                      <div className="hintBox">
-                        {activePage.content?.url
-                          ? "File uploaded ✔"
-                          : "No file uploaded yet"}
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-        </div>
-
-
-        {/* RIGHT COLUMN (PAGES FULL HEIGHT) */}
-        <div className="examCard" style={{ height: "100%" }}>
-          <div className="section" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-
+          <section className="examCard moduleBuilderCard">
             <div className="sectionHeader">
-              <div className="sectionTitle">Pages</div>
+              <div className="sectionTitle">2. Lesson outline</div>
+              <div className="sectionHint">Each lesson can hold multiple learning resources such as text, PDFs, and videos.</div>
             </div>
 
-            <div className="questionToolbar">
-              <select
-                className="input"
-                value={newPageType}
-                onChange={(e) => setNewPageType(e.target.value)}
-              >
-                <option value="video">Video</option>
-                <option value="pdf">PDF</option>
-                <option value="text">Text</option>
-              </select>
-
-              <button className="navButton primary" onClick={addPage}>
-                Add Page
+            <div className="moduleBuilderLessonToolbar">
+              <button className="navButton primary" type="button" onClick={addLesson}>
+                Add Lesson
               </button>
             </div>
 
-            {/* SCROLL AREA */}
-            <div style={{ flex: 1, overflow: "auto", marginTop: 10 }}>
-              <div className="questionList">
-                {pages.map((p, index) => (
-                  <div
-                    key={p.id}
-                    className={`questionCard ${activePageId === p.id ? "active" : ""}`}
-                    onClick={() => setActivePageId(p.id)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="questionHeader">
-                      <div className="questionNumber">
-                        Page {index + 1}
-                      </div>
+            {lessons.length === 0 ? (
+              <div className="emptyState">
+                <div className="emptyTitle">No lessons yet</div>
+                <div className="emptyText">Start by adding Lesson 1, then attach learning resources inside it.</div>
+              </div>
+            ) : (
+              <div className="moduleBuilderOutline">
+                {lessons.map((lesson, lessonIndex) => {
+                  const audit = lessonAudits[lessonIndex];
+                  const issueCount =
+                    (audit?.lessonIssues.length || 0) +
+                    (audit?.itemAudits || []).reduce((sum, itemAudit) => sum + itemAudit.itemIssues.length, 0);
 
-                      <button
-                        className="dangerButton"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removePage(p.id);
-                        }}
-                      >
-                        Remove
+                  return (
+                    <div className={`moduleBuilderOutlineRow ${lesson.id === activeLessonId ? "active" : ""}`} key={lesson.id}>
+                      <button className="moduleBuilderOutlineSelect" type="button" onClick={() => setActiveLessonId(lesson.id)}>
+                        <div className="moduleBuilderOutlineTop">
+                          <span className="moduleBuilderOutlineIndex">Lesson {lessonIndex + 1}</span>
+                          <span className={`moduleBuilderOutlineState ${issueCount === 0 ? "ready" : "pending"}`}>
+                            {issueCount === 0 ? "Ready" : `${issueCount} issue${issueCount === 1 ? "" : "s"}`}
+                          </span>
+                        </div>
+
+                        <div className="moduleBuilderOutlineTitle">{lesson.title || buildLessonTitle(lessonIndex)}</div>
+                        <div className="moduleBuilderOutlineMeta">
+                          {lesson.items.length} resource{lesson.items.length === 1 ? "" : "s"}
+                        </div>
                       </button>
-                    </div>
 
-                    <div className="questionTitle">
-                      {p.title || "Untitled Page"}
+                      <div className="moduleBuilderOutlineActions">
+                        <button className="moduleBuilderGhostButton" type="button" onClick={() => moveLesson(lesson.id, "up")} disabled={lessonIndex === 0}>
+                          Up
+                        </button>
+                        <button
+                          className="moduleBuilderGhostButton"
+                          type="button"
+                          onClick={() => moveLesson(lesson.id, "down")}
+                          disabled={lessonIndex === lessons.length - 1}
+                        >
+                          Down
+                        </button>
+                        <button className="moduleBuilderGhostButton" type="button" onClick={() => duplicateLesson(lesson.id)}>
+                          Duplicate
+                        </button>
+                        <button className="dangerButton dangerButtonSmall" type="button" onClick={() => removeLesson(lesson.id)}>
+                          Remove
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className="examCard moduleBuilderCard">
+            <div className="sectionHeader">
+              <div className="sectionTitle">3. Lesson editor</div>
+              <div className="sectionHint">
+                {activeLesson ? "Edit lesson details and add multiple learning resources below." : "Select a lesson from the outline to continue."}
               </div>
             </div>
 
-          </div>
+            {!activeLesson ? (
+              <div className="emptyState">
+                <div className="emptyTitle">Select a lesson</div>
+                <div className="emptyText">When a lesson is selected, you can define its title, summary, and learning resources.</div>
+              </div>
+            ) : (
+              <div className="moduleBuilderEditor">
+                <div className="moduleBuilderEditorSection">
+                  <label className="label">
+                    Lesson Title
+                    <input
+                      className="input"
+                      value={activeLesson.title}
+                      onChange={(e) => updateLesson(activeLesson.id, { title: e.target.value })}
+                      placeholder={buildLessonTitle(activeLessonIndex)}
+                    />
+                  </label>
+
+                  <label className="label">
+                    Lesson Summary
+                    <textarea
+                      className="input textarea"
+                      rows={3}
+                      value={activeLesson.summary}
+                      onChange={(e) => updateLesson(activeLesson.id, { summary: e.target.value })}
+                      placeholder="Optional summary for this lesson."
+                    />
+                  </label>
+                </div>
+
+                <div className="moduleBuilderResourceToolbar">
+                  <div className="moduleBuilderResourcePicker">
+                    {Object.entries(ITEM_TYPE_META).map(([value, meta]) => (
+                      <button
+                        key={value}
+                        className={`moduleBuilderTypeButton ${newItemType === value ? "active" : ""}`}
+                        type="button"
+                        onClick={() => setNewItemType(value)}
+                      >
+                        <span className="moduleBuilderTypeLabel">{meta.label}</span>
+                        <span className="moduleBuilderTypeHint">{meta.helper}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <button className="navButton primary" type="button" onClick={addItemToLesson}>
+                    Add {ITEM_TYPE_META[newItemType].label}
+                  </button>
+                </div>
+
+                <div className="moduleBuilderResourceList">
+                  {activeLesson.items.length === 0 ? (
+                    <div className="emptyState">
+                      <div className="emptyTitle">No learning resources yet</div>
+                      <div className="emptyText">Add text, PDF, or video resources to complete this lesson.</div>
+                    </div>
+                  ) : (
+                    activeLesson.items.map((item, itemIndex) => {
+                      const issues = getItemIssues(item);
+
+                      return (
+                        <div className={`moduleBuilderResourceRow ${item.id === activeItemId ? "active" : ""}`} key={item.id}>
+                          <button className="moduleBuilderResourceSelect" type="button" onClick={() => setActiveItemId(item.id)}>
+                            <div className="moduleBuilderOutlineTop">
+                              <span className="moduleBuilderOutlineIndex">Resource {itemIndex + 1}</span>
+                              <span className={`moduleBuilderOutlineState ${issues.length === 0 ? "ready" : "pending"}`}>
+                                {issues.length === 0 ? "Ready" : `${issues.length} issue${issues.length === 1 ? "" : "s"}`}
+                              </span>
+                            </div>
+
+                            <div className="moduleBuilderOutlineTitle">{item.title || buildItemTitle(item.type, itemIndex)}</div>
+                            <div className="moduleBuilderOutlineMeta">{ITEM_TYPE_META[item.type].label}</div>
+                          </button>
+
+                          <div className="moduleBuilderOutlineActions">
+                            <button className="moduleBuilderGhostButton" type="button" onClick={() => moveLessonItem(item.id, "up")} disabled={itemIndex === 0}>
+                              Up
+                            </button>
+                            <button
+                              className="moduleBuilderGhostButton"
+                              type="button"
+                              onClick={() => moveLessonItem(item.id, "down")}
+                              disabled={itemIndex === activeLesson.items.length - 1}
+                            >
+                              Down
+                            </button>
+                            <button className="moduleBuilderGhostButton" type="button" onClick={() => duplicateItem(item.id)}>
+                              Duplicate
+                            </button>
+                            <button className="dangerButton dangerButtonSmall" type="button" onClick={() => removeItem(item.id)}>
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {activeItem ? (
+                  <div className="moduleBuilderItemEditor">
+                    <div className="moduleBuilderEditorHeader">
+                      <div>
+                        <div className="moduleBuilderEditorTitle">{ITEM_TYPE_META[activeItem.type].label} Resource</div>
+                        <div className="moduleBuilderEditorHint">{ITEM_TYPE_META[activeItem.type].helper}</div>
+                      </div>
+
+                      <div className={`moduleBuilderEditorState ${getItemIssues(activeItem).length === 0 ? "ready" : "pending"}`}>
+                        {getItemIssues(activeItem).length === 0 ? "Ready to publish" : "Needs attention"}
+                      </div>
+                    </div>
+
+                    <label className="label">
+                      Resource Title
+                      <input
+                        className="input"
+                        value={activeItem.title}
+                        onChange={(e) => updateLessonItem(activeLesson.id, activeItem.id, { title: e.target.value })}
+                        placeholder={buildItemTitle(activeItem.type, activeItemIndex)}
+                      />
+                    </label>
+
+                    {activeItem.type === "text" ? (
+                      <label className="label">
+                        Text Content
+                        <textarea
+                          className="input textarea"
+                          rows={10}
+                          value={activeItem.content?.text || ""}
+                          onChange={(e) =>
+                            updateLessonItem(activeLesson.id, activeItem.id, (item) => ({
+                              ...item,
+                              content: { text: e.target.value }
+                            }))
+                          }
+                          placeholder={ITEM_TYPE_META.text.placeholder}
+                        />
+                      </label>
+                    ) : (
+                      <label className="label">
+                        Resource URL
+                        <input
+                          className="input"
+                          value={activeItem.content?.url || ""}
+                          onChange={(e) =>
+                            updateLessonItem(activeLesson.id, activeItem.id, (item) => ({
+                              ...item,
+                              content: { url: e.target.value }
+                            }))
+                          }
+                          placeholder={ITEM_TYPE_META[activeItem.type].placeholder}
+                        />
+                      </label>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </section>
         </div>
 
+        <aside className="moduleBuilderSidebar">
+          <section className="moduleBuilderSidebarCard">
+            <div className="moduleBuilderSidebarTitle">4. Final assessment</div>
+
+            <label className="label">
+              Linked Final Exam
+              <select
+                className="input"
+                value={linkedExamId}
+                onChange={(e) => {
+                  setLinkedExamId(e.target.value);
+                  setNotice("");
+                }}
+                disabled={examsLoading}
+              >
+                <option value="">{examsLoading ? "Loading exams..." : "Select a published exam"}</option>
+                {publishedExams.map((exam) => (
+                  <option key={exam._id} value={exam._id}>
+                    {exam.examTitle} • {exam.department}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="moduleBuilderSidebarNote">
+              The linked exam appears at the end of this module. A module cannot be published until a final exam is linked.
+            </div>
+
+            <div className="moduleBuilderActionStack">
+              <button className="navButton" type="button" onClick={() => persistModule("draft", { openExamBuilder: true })} disabled={saving}>
+                {linkedExam ? "Open Linked Exam Builder" : "Create Final Exam"}
+              </button>
+
+              {linkedExam ? (
+                <div className="moduleBuilderLinkedExamCard">
+                  <div className="moduleBuilderLinkedExamLabel">Currently linked</div>
+                  <div className="moduleBuilderLinkedExamTitle">{linkedExam.examTitle}</div>
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="moduleBuilderSidebarCard">
+            <div className="moduleBuilderSidebarTitle">Publish checklist</div>
+            <div className="moduleBuilderProgressBar">
+              <div className="moduleBuilderProgressFill" style={{ width: `${progressPercent}%` }} />
+            </div>
+            <div className="moduleBuilderProgressMeta">
+              {completedLessons} of {lessons.length || 0} lesson{lessons.length === 1 ? "" : "s"} fully ready
+            </div>
+
+            {publishIssues.length === 0 ? (
+              <div className="moduleBuilderChecklistReady">Everything required for publishing is complete.</div>
+            ) : (
+              <ul className="moduleBuilderIssueList">
+                {publishIssues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="moduleBuilderSidebarCard">
+            <div className="moduleBuilderSidebarTitle">Actions</div>
+            <div className="moduleBuilderActionStack">
+              <button className="navButton" type="button" onClick={() => navigate("/modules")}>
+                Back to Modules
+              </button>
+              <button className="navButton" type="button" onClick={() => persistModule("draft")} disabled={saving}>
+                {saving ? "Saving..." : "Save Draft"}
+              </button>
+              <button className="navButton primary" type="button" onClick={() => persistModule("published")} disabled={!isComplete || saving}>
+                {saving ? "Saving..." : "Publish Module"}
+              </button>
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
-  </div>
-);
-
-
-
-
-
-
-
-
-
+  );
 }

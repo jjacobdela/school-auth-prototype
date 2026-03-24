@@ -5,7 +5,7 @@ import "../styles/themes.css";
 import "../styles/userManagement.css";
 import { me, getToken } from "../api/auth";
 
-const API_BASE = "http://localhost:5001/api";
+const API_BASE = `${import.meta.env.VITE_API_URL || "http://localhost:5002"}/api`;
 
 async function apiRequest(path, { method = "GET", body } = {}) {
   const token = getToken();
@@ -73,7 +73,7 @@ function generateTempPassword() {
 export default function UserManagement() {
   const navigate = useNavigate();
 
-  const [theme, setTheme] = useState("school");
+  const [theme] = useState("corporate");
 
   const [loading, setLoading] = useState(true);
   const [viewer, setViewer] = useState(null);
@@ -489,14 +489,6 @@ export default function UserManagement() {
         </div>
 
         <div className="userMgmtHeaderRight">
-          <label className="themePickerLabel">
-            Theme
-            <select className="themePicker" value={theme} onChange={(e) => setTheme(e.target.value)}>
-              <option value="corporate">A — Corporate Light</option>
-              <option value="school">C — School Branded</option>
-            </select>
-          </label>
-
           <div className="headerActions">
             <button className="navButton" type="button" onClick={() => navigate("/dashboard")}>
               Back

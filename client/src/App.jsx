@@ -8,6 +8,7 @@ import ExamCreation from "./pages/ExamCreation";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
+import AppShellLayout from "./components/AppShellLayout";
 
 // Admin pages (make sure these imports exist)
 import UserManagement from "./pages/UserManagement";
@@ -15,7 +16,6 @@ import AccountManagement from "./pages/AccountManagement";
 
 // Applicant pages (make sure these imports exist)
 import ApplicantDashboard from "./pages/ApplicantDashboard";
-import ApplicantModules from "./pages/ApplicantModules";
 import ApplicantExam from "./pages/ApplicantExam";
 
 // Training + Modules system
@@ -35,155 +35,94 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Shared authenticated routes */}
       <Route
-        path="/dashboard"
-        element={
-          <RoleRoute roles={["admin", "applicant"]}>
-            <Dashboard />
-          </RoleRoute>
-        }
-      />
-
-      <Route
-        path="/account-management"
-        element={
-          <RoleRoute roles={["admin", "applicant"]}>
-            <AccountManagement />
-          </RoleRoute>
-        }
-      />
-
-      {/* Admin-only */}
-      <Route
-        path="/exam-creation"
-        element={
-          <RoleRoute roles={["admin"]}>
-            <ExamCreation />
-          </RoleRoute>
-        }
-      />
-
-      <Route
-        path="/user-management"
-        element={
-          <RoleRoute roles={["admin"]}>
-            <UserManagement />
-          </RoleRoute>
-        }
-      />
-
-      {/* Applicant-only */}
-      <Route
-        path="/applicant-dashboard"
-        element={
-          <RoleRoute roles={["applicant"]}>
-            <ApplicantDashboard />
-          </RoleRoute>
-        }
-      />
-
-      <Route
-        path="/applicant/modules"
-        element={
-          <RoleRoute roles={["applicant"]}>
-            <ApplicantModules />
-          </RoleRoute>
-        }
-      />
-
-      <Route
-        path="/exam"
-        element={
-          <RoleRoute roles={["applicant"]}>
-            <ApplicantExam />
-          </RoleRoute>
-        }
-      />
-
-      {/* Training (logged in) */}
-      <Route
-        path="/request-training"
         element={
           <ProtectedRoute>
-            <RequestTraining />
+            <AppShellLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        {/* Shared authenticated routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <RoleRoute roles={["admin"]}>
+              <Dashboard />
+            </RoleRoute>
+          }
+        />
 
-      <Route
-        path="/my-training"
-        element={
-          <ProtectedRoute>
-            <MyTraining />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/account-management"
+          element={
+            <RoleRoute roles={["admin", "applicant"]}>
+              <AccountManagement />
+            </RoleRoute>
+          }
+        />
 
-      {/* Modules system (logged in) */}
-      <Route
-        path="/modules"
-        element={
-          <ProtectedRoute>
-            <ModulesList />
-          </ProtectedRoute>
-        }
-      />
+        {/* Admin-only */}
+        <Route
+          path="/exam-creation"
+          element={
+            <RoleRoute roles={["admin"]}>
+              <ExamCreation />
+            </RoleRoute>
+          }
+        />
 
-      <Route
-        path="/modules/new"
-        element={
-          <ProtectedRoute>
-            <ModuleBuilder />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/user-management"
+          element={
+            <RoleRoute roles={["admin"]}>
+              <UserManagement />
+            </RoleRoute>
+          }
+        />
 
-      <Route
-        path="/modules/:id/edit"
-        element={
-          <ProtectedRoute>
-            <ModuleBuilder />
-          </ProtectedRoute>
-        }
-      />
+        {/* Applicant-only */}
+        <Route
+          path="/applicant-dashboard"
+          element={
+            <RoleRoute roles={["applicant"]}>
+              <ApplicantDashboard />
+            </RoleRoute>
+          }
+        />
 
-      <Route
-        path="/modules/:id/view"
-        element={
-          <ProtectedRoute>
-            <ModuleView />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/applicant/modules"
+          element={
+            <RoleRoute roles={["applicant"]}>
+              <ModulesList />
+            </RoleRoute>
+          }
+        />
 
-      {/* Legacy/extra module routes you had */}
-      <Route
-        path="/modules/create"
-        element={
-          <ProtectedRoute>
-            <CreateModule />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/exam"
+          element={
+            <RoleRoute roles={["applicant"]}>
+              <ApplicantExam />
+            </RoleRoute>
+          }
+        />
 
-      <Route
-        path="/modules/:id/upload"
-        element={
-          <ProtectedRoute>
-            <UploadModuleContent />
-          </ProtectedRoute>
-        }
-      />
+        {/* Training (logged in) */}
+        <Route path="/request-training" element={<RequestTraining />} />
+        <Route path="/my-training" element={<MyTraining />} />
 
-      <Route
-        path="/modules/builder"
-        element={
-          <ProtectedRoute>
-            <ModuleBuilder />
-          </ProtectedRoute>
-        }
-      />
+        {/* Modules system (logged in) */}
+        <Route path="/modules" element={<ModulesList />} />
+        <Route path="/modules/new" element={<ModuleBuilder />} />
+        <Route path="/modules/:id/edit" element={<ModuleBuilder />} />
+        <Route path="/modules/:id/view" element={<ModuleView />} />
+
+        {/* Legacy/extra module routes you had */}
+        <Route path="/modules/create" element={<CreateModule />} />
+        <Route path="/modules/:id/upload" element={<UploadModuleContent />} />
+        <Route path="/modules/builder" element={<ModuleBuilder />} />
+      </Route>
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />

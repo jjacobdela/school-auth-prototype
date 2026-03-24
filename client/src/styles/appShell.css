@@ -1,0 +1,271 @@
+.appShell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  background: #eef2f6;
+  color: var(--text);
+}
+
+.appShellSidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px 18px;
+  background: #1f2937;
+  border-right: 1px solid #d8dee7;
+}
+
+.appShellBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+}
+
+.appShellBrandMark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.appShellBrandText {
+  display: grid;
+  gap: 4px;
+}
+
+.appShellBrandTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.appShellBrandSub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.appShellNav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.appShellNavItem {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 11px 13px;
+  background: transparent;
+  color: #cbd5e1;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.appShellNavItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+}
+
+.appShellNavItem.active {
+  background: #ffffff;
+  border-color: #d8dee7;
+  color: #111827;
+}
+
+.appShellSidebarFooter {
+  margin-top: auto;
+  display: grid;
+  gap: 12px;
+}
+
+.appShellSidebarMeta {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.appShellSidebarMetaLabel {
+  margin-bottom: 4px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.appShellSidebarMetaValue {
+  color: #f8fafc;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.appShellLogout {
+  width: 100%;
+  border: 1px solid rgba(248, 250, 252, 0.14);
+  border-radius: 12px;
+  padding: 11px 13px;
+  background: transparent;
+  color: #e2e8f0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.appShellLogout:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.appShellMain {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.appShellTopbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 28px 18px;
+  background: rgba(238, 242, 246, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #d8dee7;
+}
+
+.appShellTopbarCopy {
+  display: grid;
+  gap: 5px;
+}
+
+.appShellTopbarTitle {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.appShellTopbarSubtitle {
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.appShellUserChip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #d8dee7;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.appShellAvatar {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #e0e7ff;
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+.appShellUserText {
+  display: grid;
+  gap: 2px;
+}
+
+.appShellUserName {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.appShellUserMeta {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+.appShellRoute {
+  min-width: 0;
+  padding: 24px 28px 32px;
+}
+
+.appShellRoute .examPage,
+.appShellRoute .accountPage,
+.appShellRoute .userMgmtPage {
+  min-height: auto;
+  background: transparent;
+}
+
+.appShellRoute .appHeader,
+.appShellRoute .accountHeader,
+.appShellRoute .userMgmtHeader {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.appShellRoute .examContent,
+.appShellRoute .accountContent,
+.appShellRoute .userMgmtContent {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 1100px) {
+  .appShell {
+    grid-template-columns: 1fr;
+  }
+
+  .appShellSidebar {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid #d8dee7;
+  }
+
+  .appShellTopbar {
+    padding: 18px;
+  }
+
+  .appShellRoute {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 720px) {
+  .appShellTopbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .appShellUserChip {
+    width: 100%;
+  }
+}

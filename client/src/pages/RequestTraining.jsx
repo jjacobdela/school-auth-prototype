@@ -125,7 +125,9 @@ export default function RequestTraining() {
                     {publishedModules.map((m) => (
                       <option key={m._id} value={m._id}>
                         {m.title || "(Untitled)"}{" "}
-                        {m.pagesCount != null ? `• ${m.pagesCount} pages` : ""}
+                        {m.lessonsCount != null || m.resourcesCount != null
+                          ? `• ${m.lessonsCount || 0} lessons / ${m.resourcesCount || m.pagesCount || 0} resources`
+                          : ""}
                       </option>
                     ))}
                   </select>

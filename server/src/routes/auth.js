@@ -18,6 +18,17 @@ function normalizeEmail(email) {
   return (email || "").trim().toLowerCase();
 }
 
+function normalizeLoginIdentifier(email, username) {
+  const identifier = isNonEmptyString(username) ? username : email;
+  const normalized = (identifier || "").trim().toLowerCase();
+
+  if (normalized === "admin") {
+    return "admin@gmail.com";
+  }
+
+  return normalized;
+}
+
 function signToken(user) {
   return jwt.sign(
     { userId: user._id.toString(), email: user.email },
@@ -98,16 +109,15 @@ router.post("/register", async (req, res) => {
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body || {};
+    const { email, username, password } = req.body || {};
+    const normalized = normalizeLoginIdentifier(email, username);
 
-    if (!isNonEmptyString(email) || !isNonEmptyString(password)) {
-      return res.status(400).json({ message: "email and password are required" });
+    if (!isNonEmptyString(normalized) || !isNonEmptyString(password)) {
+      return res.status(400).json({ message: "email or username and password are required" });
     }
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
+    if (!isValidEmail(normalized)) {
+      return res.status(400).json({ message: "Invalid email or username" });
     }
-
-    const normalized = normalizeEmail(email);
 
     let user = await User.findOne({ email: normalized });
     if (!user) {

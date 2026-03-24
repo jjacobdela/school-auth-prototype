@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const Exam = require("../models/Exam");
+const Module = require("../models/Module");
 const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
@@ -55,7 +56,7 @@ function validateQuestions(questions) {
  */
 router.post("/", requireAuth, async (req, res) => {
   try {
-    const { examTitle, department, durationMinutes, status, questions } = req.body || {};
+    const { examTitle, department, durationMinutes, status, questions, linkedModuleId } = req.body || {};
 
     if (!isNonEmptyString(examTitle)) {
       return res.status(400).json({ message: "examTitle is required" });
@@ -73,12 +74,26 @@ router.post("/", requireAuth, async (req, res) => {
     const qErr = validateQuestions(questions || []);
     if (qErr) return res.status(400).json({ message: qErr });
 
+    let resolvedModuleId = null;
+    if (linkedModuleId) {
+      if (!mongoose.isValidObjectId(linkedModuleId)) {
+        return res.status(400).json({ message: "Invalid linkedModuleId" });
+      }
+
+      const module = await Module.findOne({ _id: linkedModuleId, createdBy: req.user.userId }).select("_id");
+      if (!module) {
+        return res.status(404).json({ message: "Linked module not found" });
+      }
+      resolvedModuleId = module._id;
+    }
+
     const exam = await Exam.create({
       examTitle: examTitle.trim(),
       department: department.trim(),
       durationMinutes: dur,
       status: examStatus,
       questions: questions || [],
+      linkedModuleId: resolvedModuleId,
       createdBy: req.user.userId
     });
 
@@ -102,7 +117,7 @@ router.get("/", requireAuth, async (req, res) => {
 
     const exams = await Exam.find(filter)
       .sort({ updatedAt: -1 })
-      .select("_id examTitle department durationMinutes status createdAt updatedAt");
+      .select("_id examTitle department durationMinutes status createdAt updatedAt linkedModuleId");
 
     return res.json({ exams });
   } catch (err) {
@@ -143,7 +158,7 @@ router.put("/:id", requireAuth, async (req, res) => {
       return res.status(400).json({ message: "Invalid exam id" });
     }
 
-    const { examTitle, department, durationMinutes, status, questions } = req.body || {};
+    const { examTitle, department, durationMinutes, status, questions, linkedModuleId } = req.body || {};
 
     const update = {};
 
@@ -176,6 +191,23 @@ router.put("/:id", requireAuth, async (req, res) => {
       const qErr = validateQuestions(questions);
       if (qErr) return res.status(400).json({ message: qErr });
       update.questions = questions;
+    }
+
+    if (linkedModuleId !== undefined) {
+      if (!linkedModuleId) {
+        update.linkedModuleId = null;
+      } else {
+        if (!mongoose.isValidObjectId(linkedModuleId)) {
+          return res.status(400).json({ message: "Invalid linkedModuleId" });
+        }
+
+        const module = await Module.findOne({ _id: linkedModuleId, createdBy: req.user.userId }).select("_id");
+        if (!module) {
+          return res.status(404).json({ message: "Linked module not found" });
+        }
+
+        update.linkedModuleId = module._id;
+      }
     }
 
     const exam = await Exam.findOneAndUpdate(

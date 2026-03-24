@@ -5,15 +5,14 @@
     padding: 32px 16px;
   }
   
-  .card {
+.card {
     width: 100%;
     max-width: 420px;
-    background: rgba(17, 26, 46, 0.85);
+    background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 22px;
-    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow);
   }
   
   .title {
@@ -44,7 +43,7 @@
     padding: 10px 12px;
     border-radius: 12px;
     border: 1px solid var(--line);
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--surface-2);
     color: var(--text);
     outline: none;
   }
@@ -62,8 +61,8 @@
     padding: 11px 12px;
     font-weight: 700;
     cursor: pointer;
-    color: #0b1220;
-    background: var(--accent);
+    color: var(--primary-contrast);
+    background: var(--primary);
   }
   
   .button:disabled {
@@ -78,9 +77,9 @@
   }
   
   .error {
-    border: 1px solid rgba(255, 107, 107, 0.35);
-    background: rgba(255, 107, 107, 0.12);
-    color: #ffd1d1;
+    border: 1px solid var(--danger-border);
+    background: var(--danger-bg);
+    color: #991b1b;
     padding: 10px 12px;
     border-radius: 12px;
     font-size: 13px;
@@ -97,7 +96,7 @@
     padding: 12px;
     border-radius: 12px;
     border: 1px solid var(--line);
-    background: rgba(0, 0, 0, 0.18);
+    background: var(--surface-2);
     display: grid;
     gap: 6px;
     font-size: 14px;

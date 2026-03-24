@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { clearToken, getToken, me } from "../api/auth";
+import { useViewerContext } from "./viewerContext";
 
 export default function RoleRoute({ roles, children }) {
   const token = getToken();
+  const viewerContext = useViewerContext();
+  const hasViewerContext = Boolean(viewerContext);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hasViewerContext ? false : true);
   const [viewer, setViewer] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (hasViewerContext) return undefined;
+
     let mounted = true;
 
     async function load() {
@@ -35,25 +40,29 @@ export default function RoleRoute({ roles, children }) {
     return () => {
       mounted = false;
     };
-  }, [token]);
+  }, [token, hasViewerContext]);
 
   if (!token) return <Navigate to="/login" replace />;
 
-  if (loading) {
+  const resolvedLoading = hasViewerContext ? viewerContext.loading : loading;
+  const resolvedError = hasViewerContext ? viewerContext.error : error;
+  const resolvedViewer = hasViewerContext ? viewerContext.viewer : viewer;
+
+  if (resolvedLoading) {
     return (
-      <div style={{ padding: "24px", color: "rgba(255,255,255,0.85)" }}>
+      <div style={{ padding: "24px", color: "rgba(15, 23, 42, 0.75)" }}>
         Loading...
       </div>
     );
   }
 
-  if (!loading && error) {
+  if (!resolvedLoading && resolvedError) {
     clearToken();
     return <Navigate to="/login" replace />;
   }
 
-  const email = (viewer?.email || "").toLowerCase();
-  const effectiveRole = email === "admin@gmail.com" ? "admin" : viewer?.role;
+  const email = (resolvedViewer?.email || "").toLowerCase();
+  const effectiveRole = email === "admin@gmail.com" ? "admin" : resolvedViewer?.role;
 
   if (roles && roles.length > 0 && !roles.includes(effectiveRole)) {
     if (effectiveRole === "admin") return <Navigate to="/dashboard" replace />;

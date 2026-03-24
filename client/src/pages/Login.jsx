@@ -5,7 +5,7 @@ import "../styles/form.css";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -17,11 +17,17 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const data = await login({ email, password });
+      const normalizedIdentifier = identifier.trim();
+      const isEmail = normalizedIdentifier.includes("@");
+      const data = await login({
+        email: isEmail ? normalizedIdentifier : "",
+        username: isEmail ? "" : normalizedIdentifier,
+        password
+      });
       setToken(data.token);
 
       const viewer = data?.user || null;
-      const viewerEmail = (viewer?.email || email || "").toLowerCase();
+      const viewerEmail = (viewer?.email || normalizedIdentifier || "").toLowerCase();
       const isAdmin = viewer?.role === "admin" || viewerEmail === "admin@gmail.com";
 
       if (isAdmin) {
@@ -44,14 +50,14 @@ export default function Login() {
 
         <form onSubmit={onSubmit} className="form">
           <label className="label">
-            Email
+            Email or username
             <input
               className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@school.edu"
-              autoComplete="email"
-              type="email"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="admin or you@school.edu"
+              autoComplete="username"
+              type="text"
               required
             />
           </label>

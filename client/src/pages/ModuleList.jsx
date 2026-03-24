@@ -1,121 +1,99 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { deleteModule, getModules } from "../api/modules";
+import { useViewerContext } from "../components/viewerContext";
 import "../styles/form.css";
 import "../styles/themes.css";
 import "../styles/examCreation.css";
-import { getModules, deleteModule } from "../api/modules";
-import { useParams } from "react-router-dom";
-import { getModule, updateModule } from "../api/modules";
+import "../styles/moduleList.css";
 
+function formatDate(ts) {
+  if (!ts) return "—";
 
-/*
-  MODULE MODEL
-  {
-    _id,
-    title,
-    description,
-    pagesCount,
-    createdAt
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    }).format(new Date(ts));
+  } catch {
+    return "—";
   }
-*/
+}
+
+function describeModule(module) {
+  const description = (module?.description || "").trim();
+  if (description) return description;
+  return "No description added yet.";
+}
+
+function normalizeStatus(status) {
+  return (status || "draft").toLowerCase() === "published" ? "published" : "draft";
+}
+
+function getLessonsCount(module) {
+  return Number(module?.lessonsCount || 0);
+}
+
+function getResourcesCount(module) {
+  return Number(module?.resourcesCount || module?.pagesCount || 0);
+}
+
+function hasLinkedFinalExam(module) {
+  return Boolean(module?.finalExam?._id || module?.finalExamId);
+}
 
 export default function ModulesList() {
   const navigate = useNavigate();
+  const { viewer } = useViewerContext() || {};
+
   const [modules, setModules] = useState([]);
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const { id } = useParams();
-const isEditMode = Boolean(id);
-
-
-  const [deletingId, setDeletingId] = useState(null); // ✅ which module is being deleted
+  const [refreshing, setRefreshing] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-  if (!isEditMode) return;
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sort, setSort] = useState("newest");
 
-  async function loadModule() {
+  const email = (viewer?.email || "").toLowerCase();
+  const isAdmin = viewer?.role === "admin" || email === "admin@gmail.com";
+
+  async function fetchModules({ silent = false } = {}) {
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
-      const res = await getModule(id);
-      const m = res.data;
-
-      setModuleTitle(m.title || "");
-      setModuleDescription(m.description || "");
-      setUiStatus(m.status || "draft");
-
-      const mappedPages = (m.pages || []).map((p) => ({
-  id: crypto.randomUUID(),
-  title: p?.title || "",
-  type: p?.type || "text",          // ✅ default to text
-  content: p?.content || {}         // ✅ always object
-}));
-
-
-      setPages(mappedPages);
-      setActivePageId(mappedPages[0]?.id || null);
-
+      setError("");
+      const res = await getModules();
+      setModules(Array.isArray(res?.data) ? res.data : []);
     } catch (err) {
-      console.error("LOAD MODULE ERROR:", err);
+      console.error(err);
+      setModules([]);
+      setError(err?.response?.data?.message || "Failed to load modules");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   }
-
-  loadModule();
-}, [id]);
-
 
   useEffect(() => {
     fetchModules();
   }, []);
 
-  async function fetchModules() {
-    try {
-      setError("");
-      const res = await getModules();
-      setModules(res.data);
-    } catch (err) {
-      console.error(err);
-      setError(err?.response?.data?.message || "Failed to load modules");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function saveDraft() {
-  if (saving) return;
-
-  setSaving(true);
-  setError("");
-
-  try {
-    const payload = buildPayload("draft");
-
-    if (isEditMode) {
-      await updateModule(id, payload);
-    } else {
-      await createModule(payload);
-    }
-
-    navigate("/modules");
-
-  } catch (err) {
-    setError(err?.response?.data?.message || "Failed to save draft");
-  } finally {
-    setSaving(false);
-  }
-}
-
-  async function handleDelete(moduleId) {
-    const ok = window.confirm("Delete this module? This cannot be undone.");
+  async function handleDelete(moduleId, title) {
+    const ok = window.confirm(`Delete "${title || "this module"}"? This cannot be undone.`);
     if (!ok) return;
 
     try {
       setDeletingId(moduleId);
       setError("");
-
       await deleteModule(moduleId);
-
-      // ✅ remove from UI instantly
-      setModules((prev) => prev.filter((m) => m._id !== moduleId));
+      setModules((prev) => prev.filter((module) => module._id !== moduleId));
     } catch (err) {
       console.error(err);
       setError(err?.response?.data?.message || "Failed to delete module");
@@ -124,156 +102,244 @@ const isEditMode = Boolean(id);
     }
   }
 
-  const filteredModules = modules.filter((m) =>
-    (m.title || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const visibleModules = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    let list = [...modules];
+
+    if (!isAdmin) {
+      list = list.filter((module) => normalizeStatus(module.status) === "published");
+    }
+
+    if (query) {
+      list = list.filter((module) => {
+        const title = (module?.title || "").toLowerCase();
+        const description = (module?.description || "").toLowerCase();
+        return title.includes(query) || description.includes(query);
+      });
+    }
+
+    if (isAdmin && statusFilter !== "All") {
+      list = list.filter((module) => normalizeStatus(module.status) === statusFilter.toLowerCase());
+    }
+
+    list.sort((a, b) => {
+      if (sort === "title") {
+        return (a?.title || "").localeCompare(b?.title || "");
+      }
+
+      if (sort === "resources_desc") {
+        return getResourcesCount(b) - getResourcesCount(a);
+      }
+
+      if (sort === "oldest") {
+        return new Date(a?.createdAt || 0).getTime() - new Date(b?.createdAt || 0).getTime();
+      }
+
+      return new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime();
+    });
+
+    return list;
+  }, [isAdmin, modules, search, sort, statusFilter]);
+
+  const stats = useMemo(() => {
+    const published = modules.filter((module) => normalizeStatus(module.status) === "published").length;
+    const drafts = modules.filter((module) => normalizeStatus(module.status) === "draft").length;
+    const totalLessons = modules.reduce((sum, module) => sum + getLessonsCount(module), 0);
+    const totalResources = modules.reduce((sum, module) => sum + getResourcesCount(module), 0);
+    const linkedExams = modules.filter((module) => hasLinkedFinalExam(module)).length;
+    const newestCreatedAt = [...modules]
+      .sort((a, b) => new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime())[0]?.createdAt;
+
+    if (isAdmin) {
+      return [
+        { label: "Total Modules", value: modules.length, hint: `${published} published, ${drafts} draft` },
+        { label: "Learning Content", value: totalLessons, hint: `${totalResources} resources across all modules` },
+        { label: "Final Exams Linked", value: linkedExams, hint: linkedExams ? "Modules with an end-of-course assessment" : "No final exams linked yet" }
+      ];
+    }
+
+    const visibleLessons = visibleModules.reduce((sum, module) => sum + getLessonsCount(module), 0);
+    const visibleResources = visibleModules.reduce((sum, module) => sum + getResourcesCount(module), 0);
+    const visibleLinkedExams = visibleModules.filter((module) => hasLinkedFinalExam(module)).length;
+
+    return [
+      { label: "Available Modules", value: visibleModules.length, hint: "Published and ready to review" },
+      { label: "Lesson Library", value: visibleLessons, hint: `${visibleResources} resources across visible modules` },
+      { label: "Final Assessments", value: visibleLinkedExams, hint: newestCreatedAt ? `Latest update ${formatDate(newestCreatedAt)}` : "No recent updates yet" }
+    ];
+  }, [isAdmin, modules, visibleModules]);
+
+  const pageTitle = isAdmin ? "Module Library" : "Training Catalog";
+  const pageSubtitle = isAdmin
+    ? "Manage draft and published learning modules from one place."
+    : "Browse published training modules available in the system.";
 
   return (
-    <div className="examPage">
-      {/* HEADER */}
-      <header className="appHeader">
-        <div className="appHeaderLeft">
-          <div className="brandMark">MB</div>
-          <div className="brandText">
-            <div className="brandTitle">Modules</div>
-            <div className="brandSubtitle">View all learning modules</div>
+    <div className="moduleIndex">
+      <section className="moduleHeroCard">
+        <div className="moduleHeroCopy">
+          <div className="moduleEyebrow">{isAdmin ? "Operations" : "Learning"}</div>
+          <h1 className="moduleHeroTitle">{pageTitle}</h1>
+          <p className="moduleHeroText">{pageSubtitle}</p>
+        </div>
+
+        <div className="moduleHeroActions">
+          <button className="navButton" type="button" onClick={() => fetchModules({ silent: true })} disabled={refreshing}>
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+
+          {isAdmin ? (
+            <button className="navButton primary" type="button" onClick={() => navigate("/modules/new")}>
+              New Module
+            </button>
+          ) : (
+            <button className="navButton primary" type="button" onClick={() => navigate("/request-training")}>
+              Request Training
+            </button>
+          )}
+        </div>
+      </section>
+
+      <section className="moduleStatsGrid">
+        {stats.map((stat) => (
+          <div className="moduleStatCard" key={stat.label}>
+            <div className="moduleStatLabel">{stat.label}</div>
+            <div className="moduleStatValue">{stat.value}</div>
+            <div className="moduleStatHint">{stat.hint}</div>
           </div>
-        </div>
+        ))}
+      </section>
 
-        <div className="appHeaderRight">
-          <button className="navButton" onClick={() => navigate("/dashboard")}>
-            ← Back
-          </button>
-
-          <button className="navButton primary" onClick={() => navigate("/modules/new")}>
-            + New Module
-          </button>
-        </div>
-      </header>
-
-      <div className="examContent">
-        <div className="examCard">
-          {/* SEARCH */}
-          <div className="section">
+      <section className="moduleControlsCard">
+        <div className="moduleControlsGrid">
+          <label className="label moduleField">
+            Search
             <input
               className="input"
-              placeholder="Search modules..."
+              placeholder="Search by module title or description"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </label>
+
+          {isAdmin ? (
+            <label className="label moduleField moduleFieldCompact">
+              Status
+              <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="All">All</option>
+                <option value="Published">Published</option>
+                <option value="Draft">Draft</option>
+              </select>
+            </label>
+          ) : null}
+
+          <label className="label moduleField moduleFieldCompact">
+            Sort
+              <select className="input" value={sort} onChange={(e) => setSort(e.target.value)}>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="title">Title A-Z</option>
+                <option value="resources_desc">Most content</option>
+              </select>
+            </label>
+          </div>
+      </section>
+
+      <section className="moduleListCard">
+        <div className="moduleListHeader">
+          <div>
+            <div className="moduleListTitle">Modules</div>
+            <div className="moduleListSubtitle">
+              {visibleModules.length} result{visibleModules.length === 1 ? "" : "s"}
+              {!isAdmin ? " visible to applicants" : ""}
+            </div>
           </div>
 
-          {/* LIST */}
-          <div className="section">
-            {loading && <div className="hintBox">Loading modules...</div>}
-            {!loading && error && <div className="error">{error}</div>}
+          {isAdmin ? <div className="moduleListHint">Draft modules stay internal until published.</div> : null}
+        </div>
 
-            {!loading && !error && filteredModules.length === 0 && (
-              <div className="emptyState">
-                <div className="emptyTitle">No modules found</div>
-                <div className="emptyText">Create your first module to get started.</div>
-              </div>
-            )}
+        {loading ? <div className="hintBox">Loading modules...</div> : null}
+        {!loading && error ? <div className="error">{error}</div> : null}
 
-            <div className="questionList">
-              {filteredModules.map((m) => {
-  const status = (m.status || "draft").toLowerCase();
-  const isPublished = status === "published";
-
-  async function publishModule() {
-  if (!isComplete || saving) return;
-
-  setSaving(true);
-  setError("");
-
-  try {
-    const payload = buildPayload("published");
-
-    if (isEditMode) {
-      await updateModule(id, payload);
-    } else {
-      await createModule(payload);
-    }
-
-    navigate("/modules");
-
-  } catch (err) {
-    setError(err?.response?.data?.message || "Failed to publish module");
-  } finally {
-    setSaving(false);
-  }
-}
-
-
-  return (
-    <div key={m._id} className="questionCard">
-      <div className="questionHeader">
-        <div className="questionHeaderLeft">
-          <div
-            className="questionTitle"
-            style={{ fontWeight: "700", fontSize: "1.05rem" }}
-          >
-            {m.title}
+        {!loading && !error && visibleModules.length === 0 ? (
+          <div className="emptyState">
+            <div className="emptyTitle">{isAdmin ? "No modules found" : "No published modules available"}</div>
+            <div className="emptyText">
+              {isAdmin
+                ? "Create a module or change your filters to see more results."
+                : "Published modules will appear here once they are available."}
+            </div>
           </div>
-        </div>
+        ) : null}
 
-        <div className="questionHeaderRight">
-          {/* ✅ STATUS CHIP */}
-          <span className={`statusChip ${isPublished ? "ready" : "incomplete"}`}>
-            {isPublished ? "Published" : "Draft"}
-          </span>
-
-          {/* 👀 VIEW */}
-          <button className="navButton" onClick={() => navigate(`/modules/${m._id}/view`)}>
-            View
-          </button>
-
-          {/* ✏️ EDIT */}
-          <button className="navButton" onClick={() => navigate(`/modules/${m._id}/edit`)}>
-            Edit
-          </button>
-
-          {/* 🗑 DELETE */}
-          <button
-            className="dangerButton"
-            onClick={() => handleDelete(m._id)}
-            disabled={deletingId === m._id}
-            title={deletingId === m._id ? "Deleting..." : "Delete"}
-          >
-            {deletingId === m._id ? "Deleting..." : "Delete"}
-          </button>
-        </div>
-      </div>
-
-      <div className="questionBody">
-        <div className="questionMeta">
-          <span>{m.description}</span>
-        </div>
-
-        <div className="questionMeta">
-          <span>{m.pagesCount} pages</span>
-          <span> • </span>
-          <span>
-            Created {m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "—"}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-})}
-
+        {!loading && !error && visibleModules.length > 0 ? (
+          <div className="moduleTable">
+            <div className="moduleTableHead">
+              <div>Module</div>
+              <div>Status</div>
+              <div>Structure</div>
+              <div>Created</div>
+              <div>Actions</div>
             </div>
 
-            {!loading && (
-              <div style={{ marginTop: 12 }}>
-                <button className="navButton" onClick={fetchModules}>
-                  Refresh
-                </button>
-              </div>
-            )}
+            <div className="moduleTableBody">
+              {visibleModules.map((module) => {
+                const status = normalizeStatus(module.status);
+                const title = module?.title || "Untitled module";
+
+                return (
+                  <article className="moduleRow" key={module._id}>
+                    <div className="modulePrimaryCell">
+                      <div className="moduleTitleRow">
+                        <div className="moduleTitle">{title}</div>
+                        {status === "draft" ? <span className="moduleInlineTag">Internal</span> : null}
+                        <span className={`moduleExamTag ${hasLinkedFinalExam(module) ? "ready" : "pending"}`}>
+                          {hasLinkedFinalExam(module) ? "Final exam linked" : "No final exam"}
+                        </span>
+                      </div>
+                      <div className="moduleDescription">{describeModule(module)}</div>
+                    </div>
+
+                    <div className="moduleCell">
+                      <span className={`moduleStatusBadge ${status}`}>{status === "published" ? "Published" : "Draft"}</span>
+                    </div>
+
+                    <div className="moduleCell moduleCellStack">
+                      <div className="moduleCellStrong">{getLessonsCount(module)} lessons</div>
+                      <div className="moduleCellMuted">{getResourcesCount(module)} resources</div>
+                    </div>
+
+                    <div className="moduleCell moduleCellMuted">{formatDate(module?.createdAt)}</div>
+
+                    <div className="moduleActions">
+                      <button className="navButton" type="button" onClick={() => navigate(`/modules/${module._id}/view`)}>
+                        View
+                      </button>
+
+                      {isAdmin ? (
+                        <button className="navButton" type="button" onClick={() => navigate(`/modules/${module._id}/edit`)}>
+                          Edit
+                        </button>
+                      ) : null}
+
+                      {isAdmin ? (
+                        <button
+                          className="dangerButton"
+                          type="button"
+                          onClick={() => handleDelete(module._id, title)}
+                          disabled={deletingId === module._id}
+                        >
+                          {deletingId === module._id ? "Deleting..." : "Delete"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </div>
+        ) : null}
+      </section>
     </div>
   );
 }

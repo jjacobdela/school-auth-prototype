@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5001/api";
+const API_BASE = `${import.meta.env.VITE_API_URL || "http://localhost:5002"}/api`;
 
 export function getToken() {
   return localStorage.getItem("token");
@@ -24,11 +24,11 @@ export async function register({ fullName, email, password }) {
   return data;
 }
 
-export async function login({ email, password }) {
+export async function login({ email, username, password }) {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, username, password })
   });
 
   const data = await res.json().catch(() => ({}));

@@ -2,16 +2,23 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./db");
+const { ensureAdminAccount } = require("./adminAccount");
 const authRoutes = require("./routes/auth");
 const examRoutes = require("./routes/exams");
 const userRoutes = require("./routes/users");
 
 const modulesRoute = require("./routes/modules");
 const app = express();
+const localOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
 
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN,
+    origin(origin, callback) {
+      if (!origin || origin === process.env.CLIENT_ORIGIN || localOriginPattern.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: false
   })
 );
@@ -36,11 +43,11 @@ app.use("/api/modules", modulesRoute);
 
 
 
-
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 5002;
 
 connectDB(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
+    await ensureAdminAccount();
     app.listen(port, () => console.log(`✅ API running on http://localhost:${port}`));
   })
   .catch((err) => {

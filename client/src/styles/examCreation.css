@@ -424,9 +424,64 @@
   /* Meta grid */
   .examMetaGrid {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 0.6fr 0.9fr;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
     align-items: end;
+  }
+
+  .moduleContextBanner {
+    margin-top: 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1px solid #dbeafe;
+    border-radius: var(--radius-lg);
+    background: #f8fbff;
+  }
+
+  .moduleContextBannerCopy {
+    display: grid;
+    gap: 6px;
+  }
+
+  .moduleContextBannerTitle {
+    font-weight: 900;
+  }
+
+  .moduleContextBannerText {
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .examContextCard {
+    display: grid;
+    gap: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    background: var(--surface-2);
+    height: 100%;
+  }
+
+  .examContextLabel {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  .examContextValue {
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .examContextHint {
+    color: var(--muted);
+    line-height: 1.45;
+    font-size: 12px;
   }
   
   .examStats {
@@ -824,6 +879,11 @@
   @media (max-width: 900px) {
     .examMetaGrid {
       grid-template-columns: 1fr;
+    }
+
+    .moduleContextBanner {
+      flex-direction: column;
+      align-items: flex-start;
     }
   
     .mcChoiceRow {

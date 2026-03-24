@@ -33,6 +33,7 @@ const examSchema = new mongoose.Schema(
     status: { type: String, enum: ["draft", "published"], default: "draft" },
 
     questions: { type: [questionSchema], default: [] },
+    linkedModuleId: { type: mongoose.Schema.Types.ObjectId, ref: "Module", default: null },
 
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }
   },

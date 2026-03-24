@@ -1,327 +1,196 @@
 .adminDashWrap.compact {
-    max-width: 1150px;
-    margin: 0 auto;
-    padding: 18px;
-    border-radius: 18px;
-  }
-  
-  /* Top: one card, minimal info */
-  .adminTopCard {
-    display: grid;
-    grid-template-columns: 1fr 420px;
-    gap: 14px;
-    padding: 16px;
-    border-radius: 18px;
-    border: 1px solid var(--line);
-    background: linear-gradient(135deg, rgba(18, 24, 36, 0.82), rgba(10, 14, 22, 0.62));
-    margin-bottom: 12px;
-  }
-  
-  .adminTopTitle {
-    font-size: 22px;
-    font-weight: 950;
-    letter-spacing: -0.02em;
-    color: var(--text);
-  }
-  
-  .adminTopDesc {
-    margin-top: 6px;
-    color: var(--muted);
-    line-height: 1.45;
-  }
-  
-  .adminMetaPills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-  }
-  
-  .adminMetaPill {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 750;
-  }
-  
-  .adminTopRight {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 10px;
-    align-items: flex-end;
-  }
-  
-  .adminPrimaryActions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-  
-  .adminLinkBtn {
-    background: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    color: var(--accent);
-    font-weight: 850;
-  }
-  
-  /* KPI: fewer, larger, calmer */
-  .adminKpiGrid.compact3 {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin: 12px 0 14px;
-  }
-  
-  .adminKpiCard {
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background: rgba(18, 24, 36, 0.58);
-    padding: 14px;
-  }
-  
-  .adminKpiLabel {
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 850;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  
-  .adminKpiValue {
-    margin-top: 10px;
-    font-size: 30px;
-    font-weight: 950;
-    letter-spacing: -0.03em;
-    color: var(--text);
-  }
-  
-  .adminKpiHint {
-    margin-top: 6px;
-    color: var(--muted);
-    font-size: 13px;
-  }
-  
-  /* Main: only 2 cards */
-  .adminMainGrid.compactTwo {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
-    gap: 12px;
-    align-items: start;
-  }
-  
-  .adminCard {
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    background: rgba(18, 24, 36, 0.56);
-    padding: 14px;
-  }
-  
-  .adminCardHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  
-  .adminCardTitle {
-    font-size: 16px;
-    font-weight: 950;
-    letter-spacing: -0.02em;
-    color: var(--text);
-  }
-  
-  .adminCardSub {
-    margin-top: 4px;
-    font-size: 13px;
-    color: var(--muted);
-  }
-  
-  /* Recent list */
-  .adminList {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .adminListRow {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 12px;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(10, 14, 22, 0.52);
-  }
-  
-  .adminListMain {
-    min-width: 0;
-  }
-  
-  .adminListTitle {
-    font-weight: 950;
-    letter-spacing: -0.02em;
-    margin-bottom: 8px;
-    color: var(--text);
-  }
-  
-  .adminListMeta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .adminPill {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.07);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 750;
-  }
-  
-  .adminListActions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  
-  /* Right card: system + shortcuts */
-  .adminSystemBlock {
-    display: grid;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  
-  .adminSystemRow {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(10, 14, 22, 0.52);
-  }
-  
-  .adminSystemLabel {
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 850;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  
-  .adminSystemValue {
-    color: var(--text);
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    text-align: right;
-    word-break: break-word;
-  }
-  
-  .adminDivider {
-    height: 1px;
-    background: var(--line);
-    margin: 10px 0;
-  }
-  
-  .adminShortcutList {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .adminShortcutLine {
-    text-align: left;
-    width: 100%;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: rgba(10, 14, 22, 0.52);
-    padding: 12px;
-    cursor: pointer;
-  }
-  
-  .adminShortcutLine:hover {
-    background: rgba(10, 14, 22, 0.66);
-  }
-  
-  .adminShortcutLineTitle {
-    font-weight: 950;
-    color: var(--text);
-    letter-spacing: -0.02em;
-    margin-bottom: 6px;
-  }
-  
-  .adminShortcutLineDesc {
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.35;
-  }
-  
-  .adminEmpty {
-    padding: 12px;
-    color: var(--muted);
-  }
-  
-  .adminEmptyTitle {
-    font-weight: 900;
-    margin-bottom: 4px;
-    color: var(--text);
-  }
-  
-  .adminEmptyText {
-    color: var(--muted);
-  }
-  
-  /* Responsive */
-  @media (max-width: 1100px) {
-    .adminTopCard {
-      grid-template-columns: 1fr;
-    }
-  
-    .adminTopRight {
-      align-items: flex-start;
-    }
-  
-    .adminPrimaryActions {
-      justify-content: flex-start;
-    }
-  
-    .adminKpiGrid.compact3 {
-      grid-template-columns: 1fr;
-    }
-  
-    .adminMainGrid.compactTwo {
-      grid-template-columns: 1fr;
-    }
-  }
-  
-  /* One-column layout when System card is removed */
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.adminTopCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+}
+
+.adminTopLeft {
+  display: grid;
+  gap: 10px;
+}
+
+.adminTopTitle {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.adminTopDesc {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.adminMetaPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adminMetaPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.adminTopRight {
+  border-radius: 18px;
+  background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 100%);
+}
+
+.adminKpiGrid.compact3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.adminKpiCard,
+.adminCard {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+.adminKpiCard {
+  padding: 18px 20px;
+}
+
+.adminKpiLabel {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.adminKpiValue {
+  margin-top: 10px;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.adminKpiHint {
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .adminMainGrid.oneCol {
-    display: grid;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.adminCard {
+  padding: 22px;
+}
+
+.adminCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.adminCardTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.adminCardSub {
+  margin-top: 5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.adminList {
+  display: grid;
+  gap: 12px;
+}
+
+.adminListRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.adminListMain {
+  min-width: 0;
+}
+
+.adminListTitle {
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.adminListMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adminPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.adminListActions {
+  min-width: 1px;
+}
+
+.adminEmpty {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.adminEmptyTitle {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.adminEmptyText {
+  color: var(--muted);
+}
+
+@media (max-width: 960px) {
+  .adminTopCard,
+  .adminKpiGrid.compact3 {
     grid-template-columns: 1fr;
-    gap: 12px;
   }
-  
-  /* Footer inside the main card for the refresh action */
-  .adminCardFooter {
-    margin-top: 12px;
-    display: flex;
-    justify-content: flex-end;
+
+  .adminTopRight {
+    min-height: 84px;
   }
-  
+}
