@@ -56,11 +56,20 @@
   gap: 10px;
 }
 
+.moduleBuilderMetaCard,
+.moduleBuilderCard,
+.moduleBuilderActionBar,
+.moduleBuilderLessonCard,
+.moduleBuilderResourceCard,
+.moduleBuilderSkeletonCard {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
 .moduleBuilderMetaCard {
   padding: 14px;
-  border: 1px solid var(--line);
   border-radius: 16px;
-  background: var(--surface);
   text-align: center;
 }
 
@@ -78,91 +87,96 @@
   font-weight: 700;
 }
 
-.moduleBuilderLayout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.7fr) 360px;
-  gap: 18px;
-  align-items: start;
-}
-
-.moduleBuilderMain {
+.moduleBuilderForm {
   display: grid;
   gap: 18px;
 }
 
-.moduleBuilderCard {
+.moduleBuilderCard,
+.moduleBuilderActionBar {
   padding: 20px;
+  border-radius: 20px;
+}
+
+.moduleBuilderCardHeader,
+.moduleBuilderLessonHeader,
+.moduleBuilderResourceHeader,
+.moduleBuilderResourceCardHeader,
+.moduleBuilderAssessmentGrid,
+.moduleBuilderSectionActions,
+.moduleBuilderInlineActions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.moduleBuilderCardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.moduleBuilderCardHint,
+.moduleBuilderLessonHint,
+.moduleBuilderHelperText,
+.moduleBuilderProgressMeta {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.moduleBuilderFieldGrid,
+.moduleBuilderLessonFields,
+.moduleBuilderResourceFields {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
 }
 
 .moduleBuilderFieldGrid {
-  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
 }
 
 .moduleBuilderWideField {
   grid-column: 1 / -1;
 }
 
-.moduleBuilderLessonToolbar {
-  margin-bottom: 14px;
+.moduleBuilderLessons {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
 }
 
-.moduleBuilderOutline {
+.moduleBuilderLessonCard {
   display: grid;
-  gap: 12px;
-}
-
-.moduleBuilderOutlineRow,
-.moduleBuilderResourceRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: stretch;
-  padding: 12px;
-  border: 1px solid var(--line);
+  gap: 18px;
+  padding: 18px;
   border-radius: 18px;
-  background: var(--surface);
 }
 
-.moduleBuilderOutlineRow.active,
-.moduleBuilderResourceRow.active {
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
-}
-
-.moduleBuilderOutlineSelect,
-.moduleBuilderResourceSelect {
+.moduleBuilderLessonMeta,
+.moduleBuilderResourceMeta {
   display: grid;
-  gap: 8px;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  text-align: left;
-  color: var(--text);
-  cursor: pointer;
+  gap: 4px;
 }
 
-.moduleBuilderOutlineTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.moduleBuilderOutlineIndex {
-  font-size: 0.8rem;
+.moduleBuilderLessonIndex {
+  font-size: 0.78rem;
   font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--muted);
 }
 
-.moduleBuilderOutlineState {
+.moduleBuilderLessonName {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.moduleBuilderStatePill {
   display: inline-flex;
   align-items: center;
-  padding: 6px 10px;
+  padding: 7px 10px;
   border-radius: 999px;
   font-size: 0.74rem;
   font-weight: 700;
@@ -170,33 +184,16 @@
   text-transform: uppercase;
 }
 
-.moduleBuilderOutlineState.ready {
+.moduleBuilderStatePill.ready {
+  border: 1px solid #a7f3d0;
   background: #ecfdf3;
   color: #047857;
-  border: 1px solid #a7f3d0;
 }
 
-.moduleBuilderOutlineState.pending {
+.moduleBuilderStatePill.pending {
+  border: 1px solid #e5e7eb;
   background: #f8fafc;
   color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-.moduleBuilderOutlineTitle {
-  font-weight: 700;
-}
-
-.moduleBuilderOutlineMeta {
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.moduleBuilderOutlineActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .moduleBuilderGhostButton {
@@ -214,127 +211,75 @@
   cursor: not-allowed;
 }
 
-.moduleBuilderEditor {
-  display: grid;
-  gap: 18px;
-}
-
-.moduleBuilderEditorSection,
-.moduleBuilderItemEditor {
+.moduleBuilderResourceGroup {
   display: grid;
   gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
 }
 
-.moduleBuilderResourceToolbar {
-  display: grid;
-  gap: 14px;
+.moduleBuilderResourceAdder {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.moduleBuilderResourcePicker {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.moduleBuilderTypeButton {
-  display: grid;
-  gap: 6px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--surface);
-  text-align: left;
-  color: var(--text);
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
-}
-
-.moduleBuilderTypeButton.active {
-  border-color: #93c5fd;
+.moduleBuilderAdderButton {
+  border: 1px dashed #93c5fd;
+  border-radius: 12px;
+  padding: 10px 12px;
   background: #eff6ff;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
-}
-
-.moduleBuilderTypeLabel {
+  color: #1d4ed8;
   font-weight: 700;
-}
-
-.moduleBuilderTypeHint {
-  color: var(--muted);
-  line-height: 1.45;
+  cursor: pointer;
 }
 
 .moduleBuilderResourceList {
   display: grid;
+  gap: 14px;
+}
+
+.moduleBuilderResourceCard {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.moduleBuilderResourceFields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.moduleBuilderResourceContent {
+  display: grid;
   gap: 12px;
 }
 
-.moduleBuilderEditorHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.moduleBuilderInlineIssue,
+.moduleBuilderInlineReady {
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 600;
 }
 
-.moduleBuilderEditorTitle {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.moduleBuilderEditorHint {
-  margin-top: 4px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.moduleBuilderEditorState {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.moduleBuilderEditorState.ready {
-  background: #ecfdf3;
-  color: #047857;
-  border: 1px solid #a7f3d0;
-}
-
-.moduleBuilderEditorState.pending {
+.moduleBuilderInlineIssue {
+  border: 1px solid #fecaca;
   background: #fef2f2;
   color: #b91c1c;
-  border: 1px solid #fecaca;
 }
 
-.moduleBuilderSidebar {
-  position: sticky;
-  top: 110px;
-  display: grid;
-  gap: 16px;
-}
-
-.moduleBuilderSidebarCard {
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--surface);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
-}
-
-.moduleBuilderSidebarTitle {
-  margin-bottom: 12px;
-  font-size: 0.96rem;
-  font-weight: 700;
+.moduleBuilderInlineReady {
+  border: 1px solid #a7f3d0;
+  background: #ecfdf3;
+  color: #047857;
 }
 
 .moduleBuilderLinkedExamCard {
-  padding: 12px;
+  margin-top: 14px;
+  padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--surface-2);
 }
 
@@ -352,6 +297,7 @@
 }
 
 .moduleBuilderProgressBar {
+  margin-top: 16px;
   height: 10px;
   border-radius: 999px;
   background: #e2e8f0;
@@ -364,25 +310,8 @@
   border-radius: inherit;
 }
 
-.moduleBuilderProgressMeta {
-  margin-top: 10px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.moduleBuilderActionStack {
-  display: grid;
-  gap: 10px;
-}
-
-.moduleBuilderSidebarNote {
-  margin-top: 12px;
-  color: var(--muted);
-  line-height: 1.55;
-}
-
 .moduleBuilderIssueList {
-  margin: 0;
+  margin: 16px 0 0;
   padding-left: 18px;
   display: grid;
   gap: 8px;
@@ -390,47 +319,67 @@
 }
 
 .moduleBuilderChecklistReady {
+  margin-top: 16px;
   color: #047857;
   line-height: 1.55;
   font-weight: 600;
 }
 
-.moduleBuilderNotice {
-  padding: 14px 16px;
-  border: 1px solid #bfdbfe;
+.moduleBuilderActionBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.moduleBuilderPage .dangerButton {
+  border-color: #e4c7cc;
+  background: linear-gradient(180deg, #fffdfd 0%, #fff4f5 100%);
+  color: #8f2434;
+  font-weight: 700;
+  box-shadow: inset 0 -1px 0 rgba(143, 36, 52, 0.06);
+}
+
+.moduleBuilderPage .dangerButton:hover {
+  border-color: #d8a8b0;
+  background: linear-gradient(180deg, #fff8f9 0%, #fdebed 100%);
+  color: #7b1f2d;
+  filter: none;
+}
+
+.moduleBuilderPage .dangerButton:focus-visible {
+  outline: 2px solid rgba(143, 36, 52, 0.18);
+  outline-offset: 2px;
+}
+
+.moduleBuilderToast {
+  position: fixed;
+  top: 18px;
+  left: calc(var(--app-shell-sidebar-width, 0px) + ((100vw - var(--app-shell-sidebar-width, 0px)) / 2));
+  transform: translateX(-50%);
+  z-index: 40;
+  width: fit-content;
+  max-width: calc(100vw - var(--app-shell-sidebar-width, 0px) - 32px);
+  padding: 14px 20px;
+  border: 1px solid #d8dee7;
+  border-top: 3px solid #2563eb;
   border-radius: 16px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
   font-weight: 600;
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(10px);
 }
 
 .moduleBuilderSkeletonCard {
   padding: 22px;
-  border: 1px solid var(--line);
   border-radius: 20px;
-  background: var(--surface);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
   color: var(--muted);
 }
 
-@media (max-width: 1200px) {
-  .moduleBuilderLayout {
-    grid-template-columns: 1fr;
-  }
-
-  .moduleBuilderSidebar {
-    position: static;
-  }
-}
-
-@media (max-width: 900px) {
-  .moduleBuilderHero,
-  .moduleBuilderEditorHeader,
-  .moduleBuilderOutlineRow,
-  .moduleBuilderResourceRow {
-    flex-direction: column;
-  }
-
+@media (max-width: 980px) {
   .moduleBuilderHero {
     flex-direction: column;
   }
@@ -441,9 +390,32 @@
     justify-items: stretch;
   }
 
-  .moduleBuilderFieldGrid,
   .moduleBuilderMetaGrid,
-  .moduleBuilderResourcePicker {
+  .moduleBuilderFieldGrid,
+  .moduleBuilderResourceFields {
     grid-template-columns: 1fr;
+  }
+
+  .moduleBuilderToast {
+    top: 16px;
+    left: 50%;
+    max-width: calc(100vw - 32px);
+  }
+}
+
+@media (max-width: 720px) {
+  .moduleBuilderCardHeader,
+  .moduleBuilderLessonHeader,
+  .moduleBuilderResourceHeader,
+  .moduleBuilderResourceCardHeader,
+  .moduleBuilderAssessmentGrid,
+  .moduleBuilderActionBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .moduleBuilderResourceAdder,
+  .moduleBuilderInlineActions {
+    width: 100%;
   }
 }

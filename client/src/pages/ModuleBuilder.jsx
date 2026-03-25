@@ -10,7 +10,7 @@ import "../styles/moduleBuilder.css";
 const ITEM_TYPE_META = {
   text: {
     label: "Text",
-    helper: "Use for written instructions, learning notes, or lesson copy.",
+    helper: "Use written lesson content, instructions, or notes.",
     placeholder: "Write the lesson content here."
   },
   video: {
@@ -20,7 +20,7 @@ const ITEM_TYPE_META = {
   },
   pdf: {
     label: "PDF",
-    helper: "Paste a document link for manuals, handouts, or reading material.",
+    helper: "Paste a PDF or document link for this lesson resource.",
     placeholder: "https://example.com/document.pdf"
   }
 };
@@ -117,6 +117,14 @@ function moveItem(list, fromIndex, toIndex) {
   return next;
 }
 
+function countResources(lessons) {
+  return (lessons || []).reduce((sum, lesson) => sum + (lesson?.items?.length || 0), 0);
+}
+
+function normalizeContentByType(type, content = {}) {
+  return type === "text" ? { text: content?.text || "" } : { url: content?.url || "" };
+}
+
 export default function ModuleBuilder() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -128,9 +136,6 @@ export default function ModuleBuilder() {
   const [moduleTitle, setModuleTitle] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
   const [lessons, setLessons] = useState([]);
-  const [activeLessonId, setActiveLessonId] = useState(null);
-  const [activeItemId, setActiveItemId] = useState(null);
-  const [newItemType, setNewItemType] = useState("text");
   const [linkedExamId, setLinkedExamId] = useState("");
   const [publishedExams, setPublishedExams] = useState([]);
   const [uiStatus, setUiStatus] = useState("draft");
@@ -139,7 +144,18 @@ export default function ModuleBuilder() {
   const [saving, setSaving] = useState(false);
   const [examsLoading, setExamsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(null);
+
+  function showNotice(message) {
+    setNotice({
+      id: crypto.randomUUID(),
+      message
+    });
+  }
+
+  function clearNotice() {
+    setNotice(null);
+  }
 
   async function loadPublishedExams() {
     try {
@@ -184,8 +200,6 @@ export default function ModuleBuilder() {
         setLessons(normalizedLessons);
         setUiStatus((moduleData?.status || "draft").toLowerCase());
         setLinkedExamId(moduleData?.finalExamId || "");
-        setActiveLessonId(normalizedLessons[0]?.id || null);
-        setActiveItemId(normalizedLessons[0]?.items?.[0]?.id || null);
       } catch (err) {
         console.error("LOAD MODULE ERROR:", err);
         if (!mounted) return;
@@ -204,36 +218,18 @@ export default function ModuleBuilder() {
   useEffect(() => {
     if (!routeExamId) return;
     setLinkedExamId(routeExamId);
-    setNotice("Final exam linked. Save or publish the module to keep the connection.");
+    showNotice("Final exam linked. Save or publish the module to keep the connection.");
   }, [routeExamId]);
 
   useEffect(() => {
-    if (activeLessonId && lessons.some((lesson) => lesson.id === activeLessonId)) {
-      return;
-    }
+    if (!notice?.id) return undefined;
 
-    const firstLesson = lessons[0] || null;
-    setActiveLessonId(firstLesson?.id || null);
-    setActiveItemId(firstLesson?.items?.[0]?.id || null);
-  }, [activeLessonId, lessons]);
+    const timeoutId = window.setTimeout(() => {
+      setNotice(null);
+    }, 2600);
 
-  const activeLessonIndex = lessons.findIndex((lesson) => lesson.id === activeLessonId);
-  const activeLesson = activeLessonIndex >= 0 ? lessons[activeLessonIndex] : null;
-  const activeItemIndex = activeLesson?.items?.findIndex((item) => item.id === activeItemId) ?? -1;
-  const activeItem = activeItemIndex >= 0 ? activeLesson.items[activeItemIndex] : null;
-
-  useEffect(() => {
-    if (!activeLesson) {
-      setActiveItemId(null);
-      return;
-    }
-
-    if (activeItemId && activeLesson.items.some((item) => item.id === activeItemId)) {
-      return;
-    }
-
-    setActiveItemId(activeLesson.items[0]?.id || null);
-  }, [activeItemId, activeLesson]);
+    return () => window.clearTimeout(timeoutId);
+  }, [notice]);
 
   const lessonAudits = useMemo(
     () =>
@@ -282,9 +278,9 @@ export default function ModuleBuilder() {
     return issues;
   }, [lessonAudits, lessons.length, linkedExamId, moduleTitle]);
 
+  const resourceCount = useMemo(() => countResources(lessons), [lessons]);
   const isComplete = publishIssues.length === 0;
   const progressPercent = lessons.length === 0 ? 0 : Math.round((completedLessons / lessons.length) * 100);
-
   const linkedExam = publishedExams.find((exam) => exam._id === linkedExamId) || null;
 
   function updateLesson(lessonId, updater) {
@@ -316,25 +312,24 @@ export default function ModuleBuilder() {
     }));
   }
 
+  function updateItemType(lessonId, itemId, nextType) {
+    updateLessonItem(lessonId, itemId, (item) => ({
+      ...item,
+      type: nextType,
+      content: normalizeContentByType(nextType)
+    }));
+  }
+
   function addLesson() {
     const lesson = createEmptyLesson(lessons.length);
     setLessons((prev) => [...prev, lesson]);
-    setActiveLessonId(lesson.id);
-    setActiveItemId(lesson.items[0]?.id || null);
-    setNotice("");
+    showNotice(`${lesson.title} added to the module.`);
   }
 
   function removeLesson(lessonId) {
-    const currentIndex = lessons.findIndex((lesson) => lesson.id === lessonId);
-    if (currentIndex === -1) return;
-
-    const nextLessons = lessons.filter((lesson) => lesson.id !== lessonId);
-    const fallbackLesson = nextLessons[currentIndex] || nextLessons[currentIndex - 1] || nextLessons[0] || null;
-
-    setLessons(nextLessons);
-    setActiveLessonId(fallbackLesson?.id || null);
-    setActiveItemId(fallbackLesson?.items?.[0]?.id || null);
-    setNotice("");
+    const lesson = lessons.find((entry) => entry.id === lessonId);
+    setLessons((prev) => prev.filter((entry) => entry.id !== lessonId));
+    showNotice(`${lesson?.title || "Lesson"} removed from the module.`);
   }
 
   function duplicateLesson(lessonId) {
@@ -358,9 +353,7 @@ export default function ModuleBuilder() {
       next.splice(sourceIndex + 1, 0, copy);
       return next;
     });
-    setActiveLessonId(copy.id);
-    setActiveItemId(copy.items[0]?.id || null);
-    setNotice("");
+    showNotice(`${copy.title} duplicated.`);
   }
 
   function moveLesson(lessonId, direction) {
@@ -369,28 +362,28 @@ export default function ModuleBuilder() {
 
     const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
     setLessons((prev) => moveItem(prev, currentIndex, targetIndex));
-    setNotice("");
+    clearNotice();
   }
 
-  function addItemToLesson() {
-    if (!activeLesson) return;
+  function addItemToLesson(lessonId, type) {
+    const lesson = lessons.find((entry) => entry.id === lessonId);
+    if (!lesson) return;
 
-    const nextItem = createEmptyItem(newItemType, activeLesson.items.length);
-    updateLesson(activeLesson.id, (lesson) => ({
-      ...lesson,
-      items: [...lesson.items, nextItem]
+    updateLesson(lessonId, (currentLesson) => ({
+      ...currentLesson,
+      items: [...currentLesson.items, createEmptyItem(type, currentLesson.items.length)]
     }));
-    setActiveItemId(nextItem.id);
-    setNotice("");
+    showNotice(`${ITEM_TYPE_META[type].label} resource added to ${lesson.title || "the lesson"}.`);
   }
 
-  function duplicateItem(itemId) {
-    if (!activeLesson) return;
+  function duplicateItem(lessonId, itemId) {
+    const lesson = lessons.find((entry) => entry.id === lessonId);
+    if (!lesson) return;
 
-    const sourceIndex = activeLesson.items.findIndex((item) => item.id === itemId);
+    const sourceIndex = lesson.items.findIndex((item) => item.id === itemId);
     if (sourceIndex === -1) return;
 
-    const source = activeLesson.items[sourceIndex];
+    const source = lesson.items[sourceIndex];
     const copy = {
       ...source,
       id: crypto.randomUUID(),
@@ -398,44 +391,37 @@ export default function ModuleBuilder() {
       content: { ...(source.content || {}) }
     };
 
-    updateLesson(activeLesson.id, (lesson) => {
-      const nextItems = [...lesson.items];
+    updateLesson(lessonId, (entry) => {
+      const nextItems = [...entry.items];
       nextItems.splice(sourceIndex + 1, 0, copy);
-      return { ...lesson, items: nextItems };
+      return { ...entry, items: nextItems };
     });
-    setActiveItemId(copy.id);
-    setNotice("");
+    showNotice(`${copy.title} duplicated in ${lesson.title || "the lesson"}.`);
   }
 
-  function removeItem(itemId) {
-    if (!activeLesson) return;
-
-    const currentIndex = activeLesson.items.findIndex((item) => item.id === itemId);
-    if (currentIndex === -1) return;
-
-    const nextItems = activeLesson.items.filter((item) => item.id !== itemId);
-    const fallbackItem = nextItems[currentIndex] || nextItems[currentIndex - 1] || nextItems[0] || null;
-
-    updateLesson(activeLesson.id, (lesson) => ({
+  function removeItem(lessonId, itemId) {
+    const lesson = lessons.find((entry) => entry.id === lessonId);
+    const item = lesson?.items?.find((entry) => entry.id === itemId);
+    updateLesson(lessonId, (lesson) => ({
       ...lesson,
-      items: nextItems
+      items: lesson.items.filter((item) => item.id !== itemId)
     }));
-    setActiveItemId(fallbackItem?.id || null);
-    setNotice("");
+    showNotice(`${item?.title || "Resource"} removed from ${lesson?.title || "the lesson"}.`);
   }
 
-  function moveLessonItem(itemId, direction) {
-    if (!activeLesson) return;
+  function moveLessonItem(lessonId, itemId, direction) {
+    const lesson = lessons.find((entry) => entry.id === lessonId);
+    if (!lesson) return;
 
-    const currentIndex = activeLesson.items.findIndex((item) => item.id === itemId);
+    const currentIndex = lesson.items.findIndex((item) => item.id === itemId);
     if (currentIndex === -1) return;
 
     const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    updateLesson(activeLesson.id, (lesson) => ({
-      ...lesson,
-      items: moveItem(lesson.items, currentIndex, targetIndex)
+    updateLesson(lessonId, (entry) => ({
+      ...entry,
+      items: moveItem(entry.items, currentIndex, targetIndex)
     }));
-    setNotice("");
+    clearNotice();
   }
 
   function buildPayload(nextStatus) {
@@ -466,7 +452,7 @@ export default function ModuleBuilder() {
     try {
       setSaving(true);
       setError("");
-      setNotice("");
+      clearNotice();
 
       const payload = buildPayload(nextStatus);
       const res = isEditMode ? await updateModule(id, payload) : await createModule(payload);
@@ -487,7 +473,7 @@ export default function ModuleBuilder() {
         return;
       }
 
-      setNotice(nextStatus === "published" ? "Module published successfully." : "Draft saved successfully.");
+      showNotice(nextStatus === "published" ? "Module published successfully." : "Draft saved successfully.");
 
       if (!isEditMode && savedModuleId) {
         navigate(`/modules/${savedModuleId}/edit`, { replace: true });
@@ -515,7 +501,7 @@ export default function ModuleBuilder() {
           <div className="moduleBuilderEyebrow">{isEditMode ? "Edit Course Module" : "New Course Module"}</div>
           <h1 className="moduleBuilderTitle">{moduleTitle.trim() || "Untitled module"}</h1>
           <p className="moduleBuilderSubtitle">
-            Build a module with lessons, attach learning resources under each lesson, and link a final assessment before publishing.
+            Create the module as one form: add lessons, attach learning resources inside each lesson, then connect the final exam before publishing.
           </p>
         </div>
 
@@ -529,9 +515,7 @@ export default function ModuleBuilder() {
 
             <div className="moduleBuilderMetaCard">
               <div className="moduleBuilderMetaLabel">Resources</div>
-              <div className="moduleBuilderMetaValue">
-                {lessons.reduce((sum, lesson) => sum + lesson.items.length, 0)}
-              </div>
+              <div className="moduleBuilderMetaValue">{resourceCount}</div>
             </div>
 
             <div className="moduleBuilderMetaCard">
@@ -543,82 +527,89 @@ export default function ModuleBuilder() {
       </section>
 
       {error ? <div className="error">{error}</div> : null}
-      {notice ? <div className="moduleBuilderNotice">{notice}</div> : null}
+      {notice ? (
+        <div className="moduleBuilderToast" role="status" aria-live="polite">
+          {notice.message}
+        </div>
+      ) : null}
 
-      <div className="moduleBuilderLayout">
-        <div className="moduleBuilderMain">
-          <section className="examCard moduleBuilderCard">
-            <div className="sectionHeader">
-              <div className="sectionTitle">1. Module overview</div>
-              <div className="sectionHint">Name the module or course and explain what teachers or learners should expect.</div>
+      <div className="moduleBuilderForm">
+        <section className="moduleBuilderCard">
+          <div className="moduleBuilderCardHeader">
+            <div>
+              <div className="moduleBuilderCardTitle">Module details</div>
+              <div className="moduleBuilderCardHint">Start with the course title and a short description.</div>
+            </div>
+          </div>
+
+          <div className="moduleBuilderFieldGrid">
+            <label className="label">
+              Module or Course Title
+              <input
+                className="input"
+                value={moduleTitle}
+                onChange={(e) => setModuleTitle(e.target.value)}
+                placeholder="Example: Safety Orientation"
+              />
+            </label>
+
+            <label className="label moduleBuilderWideField">
+              Description
+              <textarea
+                className="input textarea"
+                rows={4}
+                value={moduleDescription}
+                onChange={(e) => setModuleDescription(e.target.value)}
+                placeholder="Summarize what this module covers, who it is for, and how the learning is structured."
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="moduleBuilderCard">
+          <div className="moduleBuilderCardHeader">
+            <div>
+              <div className="moduleBuilderCardTitle">Lessons and learning content</div>
+              <div className="moduleBuilderCardHint">Each lesson stays inline so the whole course can be authored like a single form.</div>
             </div>
 
-            <div className="moduleBuilderFieldGrid">
-              <label className="label">
-                Module or Course Title
-                <input
-                  className="input"
-                  value={moduleTitle}
-                  onChange={(e) => setModuleTitle(e.target.value)}
-                  placeholder="Example: Safety Orientation"
-                />
-              </label>
-
-              <label className="label moduleBuilderWideField">
-                Description
-                <textarea
-                  className="input textarea"
-                  rows={4}
-                  value={moduleDescription}
-                  onChange={(e) => setModuleDescription(e.target.value)}
-                  placeholder="Summarize what this module covers, who it is for, and how the learning is structured."
-                />
-              </label>
-            </div>
-          </section>
-
-          <section className="examCard moduleBuilderCard">
-            <div className="sectionHeader">
-              <div className="sectionTitle">2. Lesson outline</div>
-              <div className="sectionHint">Each lesson can hold multiple learning resources such as text, PDFs, and videos.</div>
-            </div>
-
-            <div className="moduleBuilderLessonToolbar">
+            <div className="moduleBuilderSectionActions">
               <button className="navButton primary" type="button" onClick={addLesson}>
                 Add Lesson
               </button>
             </div>
+          </div>
 
-            {lessons.length === 0 ? (
-              <div className="emptyState">
-                <div className="emptyTitle">No lessons yet</div>
-                <div className="emptyText">Start by adding Lesson 1, then attach learning resources inside it.</div>
-              </div>
-            ) : (
-              <div className="moduleBuilderOutline">
-                {lessons.map((lesson, lessonIndex) => {
-                  const audit = lessonAudits[lessonIndex];
-                  const issueCount =
-                    (audit?.lessonIssues.length || 0) +
-                    (audit?.itemAudits || []).reduce((sum, itemAudit) => sum + itemAudit.itemIssues.length, 0);
+          {lessons.length === 0 ? (
+            <div className="emptyState">
+              <div className="emptyTitle">No lessons yet</div>
+              <div className="emptyText">Add Lesson 1 to start building the module content.</div>
+            </div>
+          ) : (
+            <div className="moduleBuilderLessons">
+              {lessons.map((lesson, lessonIndex) => {
+                const audit = lessonAudits[lessonIndex];
+                const lessonIssueCount =
+                  (audit?.lessonIssues.length || 0) +
+                  (audit?.itemAudits || []).reduce((sum, itemAudit) => sum + itemAudit.itemIssues.length, 0);
 
-                  return (
-                    <div className={`moduleBuilderOutlineRow ${lesson.id === activeLessonId ? "active" : ""}`} key={lesson.id}>
-                      <button className="moduleBuilderOutlineSelect" type="button" onClick={() => setActiveLessonId(lesson.id)}>
-                        <div className="moduleBuilderOutlineTop">
-                          <span className="moduleBuilderOutlineIndex">Lesson {lessonIndex + 1}</span>
-                          <span className={`moduleBuilderOutlineState ${issueCount === 0 ? "ready" : "pending"}`}>
-                            {issueCount === 0 ? "Ready" : `${issueCount} issue${issueCount === 1 ? "" : "s"}`}
-                          </span>
+                return (
+                  <article className="moduleBuilderLessonCard" key={lesson.id}>
+                    <div className="moduleBuilderLessonHeader">
+                      <div className="moduleBuilderLessonMeta">
+                        <div className="moduleBuilderLessonIndex">Lesson {lessonIndex + 1}</div>
+                        <div className="moduleBuilderLessonName">{lesson.title || buildLessonTitle(lessonIndex)}</div>
+                        <div className="moduleBuilderLessonHint">
+                          {lessonIssueCount === 0
+                            ? "This lesson is ready."
+                            : `${lessonIssueCount} issue${lessonIssueCount === 1 ? "" : "s"} still need attention.`}
                         </div>
+                      </div>
 
-                        <div className="moduleBuilderOutlineTitle">{lesson.title || buildLessonTitle(lessonIndex)}</div>
-                        <div className="moduleBuilderOutlineMeta">
-                          {lesson.items.length} resource{lesson.items.length === 1 ? "" : "s"}
-                        </div>
-                      </button>
-
-                      <div className="moduleBuilderOutlineActions">
+                      <div className="moduleBuilderInlineActions">
+                        <span className={`moduleBuilderStatePill ${lessonIssueCount === 0 ? "ready" : "pending"}`}>
+                          {lessonIssueCount === 0 ? "Ready" : "Needs work"}
+                        </span>
                         <button className="moduleBuilderGhostButton" type="button" onClick={() => moveLesson(lesson.id, "up")} disabled={lessonIndex === 0}>
                           Up
                         </button>
@@ -638,185 +629,189 @@ export default function ModuleBuilder() {
                         </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
 
-          <section className="examCard moduleBuilderCard">
-            <div className="sectionHeader">
-              <div className="sectionTitle">3. Lesson editor</div>
-              <div className="sectionHint">
-                {activeLesson ? "Edit lesson details and add multiple learning resources below." : "Select a lesson from the outline to continue."}
-              </div>
-            </div>
-
-            {!activeLesson ? (
-              <div className="emptyState">
-                <div className="emptyTitle">Select a lesson</div>
-                <div className="emptyText">When a lesson is selected, you can define its title, summary, and learning resources.</div>
-              </div>
-            ) : (
-              <div className="moduleBuilderEditor">
-                <div className="moduleBuilderEditorSection">
-                  <label className="label">
-                    Lesson Title
-                    <input
-                      className="input"
-                      value={activeLesson.title}
-                      onChange={(e) => updateLesson(activeLesson.id, { title: e.target.value })}
-                      placeholder={buildLessonTitle(activeLessonIndex)}
-                    />
-                  </label>
-
-                  <label className="label">
-                    Lesson Summary
-                    <textarea
-                      className="input textarea"
-                      rows={3}
-                      value={activeLesson.summary}
-                      onChange={(e) => updateLesson(activeLesson.id, { summary: e.target.value })}
-                      placeholder="Optional summary for this lesson."
-                    />
-                  </label>
-                </div>
-
-                <div className="moduleBuilderResourceToolbar">
-                  <div className="moduleBuilderResourcePicker">
-                    {Object.entries(ITEM_TYPE_META).map(([value, meta]) => (
-                      <button
-                        key={value}
-                        className={`moduleBuilderTypeButton ${newItemType === value ? "active" : ""}`}
-                        type="button"
-                        onClick={() => setNewItemType(value)}
-                      >
-                        <span className="moduleBuilderTypeLabel">{meta.label}</span>
-                        <span className="moduleBuilderTypeHint">{meta.helper}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <button className="navButton primary" type="button" onClick={addItemToLesson}>
-                    Add {ITEM_TYPE_META[newItemType].label}
-                  </button>
-                </div>
-
-                <div className="moduleBuilderResourceList">
-                  {activeLesson.items.length === 0 ? (
-                    <div className="emptyState">
-                      <div className="emptyTitle">No learning resources yet</div>
-                      <div className="emptyText">Add text, PDF, or video resources to complete this lesson.</div>
-                    </div>
-                  ) : (
-                    activeLesson.items.map((item, itemIndex) => {
-                      const issues = getItemIssues(item);
-
-                      return (
-                        <div className={`moduleBuilderResourceRow ${item.id === activeItemId ? "active" : ""}`} key={item.id}>
-                          <button className="moduleBuilderResourceSelect" type="button" onClick={() => setActiveItemId(item.id)}>
-                            <div className="moduleBuilderOutlineTop">
-                              <span className="moduleBuilderOutlineIndex">Resource {itemIndex + 1}</span>
-                              <span className={`moduleBuilderOutlineState ${issues.length === 0 ? "ready" : "pending"}`}>
-                                {issues.length === 0 ? "Ready" : `${issues.length} issue${issues.length === 1 ? "" : "s"}`}
-                              </span>
-                            </div>
-
-                            <div className="moduleBuilderOutlineTitle">{item.title || buildItemTitle(item.type, itemIndex)}</div>
-                            <div className="moduleBuilderOutlineMeta">{ITEM_TYPE_META[item.type].label}</div>
-                          </button>
-
-                          <div className="moduleBuilderOutlineActions">
-                            <button className="moduleBuilderGhostButton" type="button" onClick={() => moveLessonItem(item.id, "up")} disabled={itemIndex === 0}>
-                              Up
-                            </button>
-                            <button
-                              className="moduleBuilderGhostButton"
-                              type="button"
-                              onClick={() => moveLessonItem(item.id, "down")}
-                              disabled={itemIndex === activeLesson.items.length - 1}
-                            >
-                              Down
-                            </button>
-                            <button className="moduleBuilderGhostButton" type="button" onClick={() => duplicateItem(item.id)}>
-                              Duplicate
-                            </button>
-                            <button className="dangerButton dangerButtonSmall" type="button" onClick={() => removeItem(item.id)}>
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {activeItem ? (
-                  <div className="moduleBuilderItemEditor">
-                    <div className="moduleBuilderEditorHeader">
-                      <div>
-                        <div className="moduleBuilderEditorTitle">{ITEM_TYPE_META[activeItem.type].label} Resource</div>
-                        <div className="moduleBuilderEditorHint">{ITEM_TYPE_META[activeItem.type].helper}</div>
-                      </div>
-
-                      <div className={`moduleBuilderEditorState ${getItemIssues(activeItem).length === 0 ? "ready" : "pending"}`}>
-                        {getItemIssues(activeItem).length === 0 ? "Ready to publish" : "Needs attention"}
-                      </div>
-                    </div>
-
-                    <label className="label">
-                      Resource Title
-                      <input
-                        className="input"
-                        value={activeItem.title}
-                        onChange={(e) => updateLessonItem(activeLesson.id, activeItem.id, { title: e.target.value })}
-                        placeholder={buildItemTitle(activeItem.type, activeItemIndex)}
-                      />
-                    </label>
-
-                    {activeItem.type === "text" ? (
+                    <div className="moduleBuilderLessonFields">
                       <label className="label">
-                        Text Content
-                        <textarea
-                          className="input textarea"
-                          rows={10}
-                          value={activeItem.content?.text || ""}
-                          onChange={(e) =>
-                            updateLessonItem(activeLesson.id, activeItem.id, (item) => ({
-                              ...item,
-                              content: { text: e.target.value }
-                            }))
-                          }
-                          placeholder={ITEM_TYPE_META.text.placeholder}
-                        />
-                      </label>
-                    ) : (
-                      <label className="label">
-                        Resource URL
+                        Lesson Title
                         <input
                           className="input"
-                          value={activeItem.content?.url || ""}
-                          onChange={(e) =>
-                            updateLessonItem(activeLesson.id, activeItem.id, (item) => ({
-                              ...item,
-                              content: { url: e.target.value }
-                            }))
-                          }
-                          placeholder={ITEM_TYPE_META[activeItem.type].placeholder}
+                          value={lesson.title}
+                          onChange={(e) => updateLesson(lesson.id, { title: e.target.value })}
+                          placeholder={buildLessonTitle(lessonIndex)}
                         />
                       </label>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </section>
-        </div>
 
-        <aside className="moduleBuilderSidebar">
-          <section className="moduleBuilderSidebarCard">
-            <div className="moduleBuilderSidebarTitle">4. Final assessment</div>
+                      <label className="label">
+                        Lesson Summary
+                        <textarea
+                          className="input textarea"
+                          rows={3}
+                          value={lesson.summary}
+                          onChange={(e) => updateLesson(lesson.id, { summary: e.target.value })}
+                          placeholder="Optional summary for this lesson."
+                        />
+                      </label>
+                    </div>
 
+                    <div className="moduleBuilderResourceGroup">
+                      <div className="moduleBuilderResourceHeader">
+                        <div>
+                          <div className="moduleBuilderCardTitle">Learning resources</div>
+                          <div className="moduleBuilderCardHint">Add text, video, and PDF items directly inside this lesson.</div>
+                        </div>
+                      </div>
+
+                      <div className="moduleBuilderResourceAdder">
+                        {Object.entries(ITEM_TYPE_META).map(([type, meta]) => (
+                          <button
+                            key={`${lesson.id}-${type}`}
+                            className="moduleBuilderAdderButton"
+                            type="button"
+                            onClick={() => addItemToLesson(lesson.id, type)}
+                          >
+                            Add {meta.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {lesson.items.length === 0 ? (
+                        <div className="emptyState">
+                          <div className="emptyTitle">No resources yet</div>
+                          <div className="emptyText">Add at least one learning resource to complete this lesson.</div>
+                        </div>
+                      ) : (
+                        <div className="moduleBuilderResourceList">
+                          {lesson.items.map((item, itemIndex) => {
+                            const itemIssues = audit?.itemAudits?.find((entry) => entry.itemId === item.id)?.itemIssues || [];
+
+                            return (
+                              <div className="moduleBuilderResourceCard" key={item.id}>
+                                <div className="moduleBuilderResourceCardHeader">
+                                  <div className="moduleBuilderResourceMeta">
+                                    <div className="moduleBuilderLessonIndex">Resource {itemIndex + 1}</div>
+                                    <div className="moduleBuilderLessonName">{item.title || buildItemTitle(item.type, itemIndex)}</div>
+                                  </div>
+
+                                  <div className="moduleBuilderInlineActions">
+                                    <span className={`moduleBuilderStatePill ${itemIssues.length === 0 ? "ready" : "pending"}`}>
+                                      {itemIssues.length === 0 ? "Ready" : "Needs work"}
+                                    </span>
+                                    <button
+                                      className="moduleBuilderGhostButton"
+                                      type="button"
+                                      onClick={() => moveLessonItem(lesson.id, item.id, "up")}
+                                      disabled={itemIndex === 0}
+                                    >
+                                      Up
+                                    </button>
+                                    <button
+                                      className="moduleBuilderGhostButton"
+                                      type="button"
+                                      onClick={() => moveLessonItem(lesson.id, item.id, "down")}
+                                      disabled={itemIndex === lesson.items.length - 1}
+                                    >
+                                      Down
+                                    </button>
+                                    <button className="moduleBuilderGhostButton" type="button" onClick={() => duplicateItem(lesson.id, item.id)}>
+                                      Duplicate
+                                    </button>
+                                    <button className="dangerButton dangerButtonSmall" type="button" onClick={() => removeItem(lesson.id, item.id)}>
+                                      Remove
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="moduleBuilderResourceFields">
+                                  <label className="label">
+                                    Resource Type
+                                    <select
+                                      className="input"
+                                      value={item.type}
+                                      onChange={(e) => updateItemType(lesson.id, item.id, e.target.value)}
+                                    >
+                                      {Object.entries(ITEM_TYPE_META).map(([value, meta]) => (
+                                        <option key={value} value={value}>
+                                          {meta.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+
+                                  <label className="label">
+                                    Resource Title
+                                    <input
+                                      className="input"
+                                      value={item.title}
+                                      onChange={(e) => updateLessonItem(lesson.id, item.id, { title: e.target.value })}
+                                      placeholder={buildItemTitle(item.type, itemIndex)}
+                                    />
+                                  </label>
+                                </div>
+
+                                <div className="moduleBuilderHelperText">{ITEM_TYPE_META[item.type].helper}</div>
+
+                                <div className="moduleBuilderResourceContent">
+                                  {item.type === "text" ? (
+                                    <label className="label">
+                                      Text Content
+                                      <textarea
+                                        className="input textarea"
+                                        rows={8}
+                                        value={item.content?.text || ""}
+                                        onChange={(e) =>
+                                          updateLessonItem(lesson.id, item.id, (entry) => ({
+                                            ...entry,
+                                            content: { text: e.target.value }
+                                          }))
+                                        }
+                                        placeholder={ITEM_TYPE_META.text.placeholder}
+                                      />
+                                    </label>
+                                  ) : (
+                                    <label className="label">
+                                      Resource URL
+                                      <input
+                                        className="input"
+                                        value={item.content?.url || ""}
+                                        onChange={(e) =>
+                                          updateLessonItem(lesson.id, item.id, (entry) => ({
+                                            ...entry,
+                                            content: { url: e.target.value }
+                                          }))
+                                        }
+                                        placeholder={ITEM_TYPE_META[item.type].placeholder}
+                                      />
+                                    </label>
+                                  )}
+                                </div>
+
+                                {itemIssues.length === 0 ? (
+                                  <div className="moduleBuilderInlineReady">This resource is ready for publish.</div>
+                                ) : (
+                                  <div className="moduleBuilderInlineIssue">{itemIssues.join(" • ")}</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="moduleBuilderCard">
+          <div className="moduleBuilderCardHeader">
+            <div>
+              <div className="moduleBuilderCardTitle">Final assessment</div>
+              <div className="moduleBuilderCardHint">The linked exam appears at the end of this module.</div>
+            </div>
+          </div>
+
+          <div className="moduleBuilderAssessmentGrid">
             <label className="label">
               Linked Final Exam
               <select
@@ -824,7 +819,7 @@ export default function ModuleBuilder() {
                 value={linkedExamId}
                 onChange={(e) => {
                   setLinkedExamId(e.target.value);
-                  setNotice("");
+                  clearNotice();
                 }}
                 disabled={examsLoading}
               >
@@ -837,59 +832,62 @@ export default function ModuleBuilder() {
               </select>
             </label>
 
-            <div className="moduleBuilderSidebarNote">
-              The linked exam appears at the end of this module. A module cannot be published until a final exam is linked.
-            </div>
-
-            <div className="moduleBuilderActionStack">
+            <div className="moduleBuilderSectionActions">
               <button className="navButton" type="button" onClick={() => persistModule("draft", { openExamBuilder: true })} disabled={saving}>
                 {linkedExam ? "Open Linked Exam Builder" : "Create Final Exam"}
               </button>
-
-              {linkedExam ? (
-                <div className="moduleBuilderLinkedExamCard">
-                  <div className="moduleBuilderLinkedExamLabel">Currently linked</div>
-                  <div className="moduleBuilderLinkedExamTitle">{linkedExam.examTitle}</div>
-                </div>
-              ) : null}
             </div>
-          </section>
+          </div>
 
-          <section className="moduleBuilderSidebarCard">
-            <div className="moduleBuilderSidebarTitle">Publish checklist</div>
-            <div className="moduleBuilderProgressBar">
-              <div className="moduleBuilderProgressFill" style={{ width: `${progressPercent}%` }} />
-            </div>
-            <div className="moduleBuilderProgressMeta">
-              {completedLessons} of {lessons.length || 0} lesson{lessons.length === 1 ? "" : "s"} fully ready
-            </div>
+          <div className="moduleBuilderHelperText">
+            A module cannot be published until a final exam is linked.
+          </div>
 
-            {publishIssues.length === 0 ? (
-              <div className="moduleBuilderChecklistReady">Everything required for publishing is complete.</div>
-            ) : (
-              <ul className="moduleBuilderIssueList">
-                {publishIssues.map((issue) => (
-                  <li key={issue}>{issue}</li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="moduleBuilderSidebarCard">
-            <div className="moduleBuilderSidebarTitle">Actions</div>
-            <div className="moduleBuilderActionStack">
-              <button className="navButton" type="button" onClick={() => navigate("/modules")}>
-                Back to Modules
-              </button>
-              <button className="navButton" type="button" onClick={() => persistModule("draft")} disabled={saving}>
-                {saving ? "Saving..." : "Save Draft"}
-              </button>
-              <button className="navButton primary" type="button" onClick={() => persistModule("published")} disabled={!isComplete || saving}>
-                {saving ? "Saving..." : "Publish Module"}
-              </button>
+          {linkedExam ? (
+            <div className="moduleBuilderLinkedExamCard">
+              <div className="moduleBuilderLinkedExamLabel">Currently linked</div>
+              <div className="moduleBuilderLinkedExamTitle">{linkedExam.examTitle}</div>
             </div>
-          </section>
-        </aside>
+          ) : null}
+        </section>
+
+        <section className="moduleBuilderCard">
+          <div className="moduleBuilderCardHeader">
+            <div>
+              <div className="moduleBuilderCardTitle">Publish readiness</div>
+              <div className="moduleBuilderCardHint">Use this list to finish the module before publishing.</div>
+            </div>
+          </div>
+
+          <div className="moduleBuilderProgressBar">
+            <div className="moduleBuilderProgressFill" style={{ width: `${progressPercent}%` }} />
+          </div>
+          <div className="moduleBuilderProgressMeta">
+            {completedLessons} of {lessons.length || 0} lesson{lessons.length === 1 ? "" : "s"} fully ready
+          </div>
+
+          {publishIssues.length === 0 ? (
+            <div className="moduleBuilderChecklistReady">Everything required for publishing is complete.</div>
+          ) : (
+            <ul className="moduleBuilderIssueList">
+              {publishIssues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="moduleBuilderActionBar">
+          <button className="navButton" type="button" onClick={() => navigate("/modules")}>
+            Back to Modules
+          </button>
+          <button className="navButton" type="button" onClick={() => persistModule("draft")} disabled={saving}>
+            {saving ? "Saving..." : "Save Draft"}
+          </button>
+          <button className="navButton primary" type="button" onClick={() => persistModule("published")} disabled={!isComplete || saving}>
+            {saving ? "Saving..." : "Publish Module"}
+          </button>
+        </section>
       </div>
     </div>
   );
