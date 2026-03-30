@@ -43,48 +43,83 @@ export default function Login() {
   }
 
   return (
-    <div className="page">
-      <div className="card">
-        <h1 className="title">Welcome back</h1>
-        <p className="subtitle">Log in to continue.</p>
+    <div className="page authPage">
+      <div className="authShell">
+        <section className="authShowcase">
+          <div className="authKicker">GO21 Ops</div>
+          <h1 className="authHeadline">Training, modules, and assessments in one workspace.</h1>
+          <p className="authBody">
+            Sign in to manage learning content, publish exams, and keep training operations organized in a cleaner corporate workflow.
+          </p>
 
-        <form onSubmit={onSubmit} className="form">
-          <label className="label">
-            Email or username
-            <input
-              className="input"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="admin or you@school.edu"
-              autoComplete="username"
-              type="text"
-              required
-            />
-          </label>
+          <div className="authFeatureGrid">
+            <div className="authFeatureCard">
+              <div className="authFeatureLabel">Modules</div>
+              <div className="authFeatureValue">Structured lessons with text, PDF, and video content.</div>
+            </div>
 
-          <label className="label">
-            Password
-            <input
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              autoComplete="current-password"
-              type="password"
-              required
-            />
-          </label>
+            <div className="authFeatureCard">
+              <div className="authFeatureLabel">Assessments</div>
+              <div className="authFeatureValue">Exam publishing and final module checks from the same system.</div>
+            </div>
 
-          {error ? <div className="error">{error}</div> : null}
+            <div className="authFeatureCard">
+              <div className="authFeatureLabel">Access</div>
+              <div className="authFeatureValue">Role-based workspaces for admins, teachers, and applicants.</div>
+            </div>
 
-          <button className="button" type="submit" disabled={loading}>
-            {loading ? "Logging in..." : "Log in"}
-          </button>
-        </form>
+            <div className="authFeatureCard">
+              <div className="authFeatureLabel">Workflow</div>
+              <div className="authFeatureValue">One place for sign-in, authoring, approvals, and training records.</div>
+            </div>
+          </div>
+        </section>
 
-        <p className="footerText">
-          No account yet? <Link to="/register">Register</Link>
-        </p>
+        <div className="card authCard">
+          <div className="authCardBadge">Secure Sign In</div>
+          <h1 className="title">Welcome back</h1>
+          <p className="subtitle">Log in to continue to the GO21 workspace.</p>
+
+          <form onSubmit={onSubmit} className="form">
+            <label className="label">
+              Email or username
+              <input
+                className="input"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="admin or you@school.edu"
+                autoComplete="username"
+                type="text"
+                required
+              />
+            </label>
+
+            <label className="label">
+              Password
+              <input
+                className="input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
+                autoComplete="current-password"
+                type="password"
+                required
+              />
+            </label>
+
+            {error ? <div className="error">{error}</div> : null}
+
+            <button className="button" type="submit" disabled={loading}>
+              {loading ? "Logging in..." : "Log in"}
+            </button>
+          </form>
+
+          <p className="authHelperText">Use your email or assigned username to access the system.</p>
+
+          <p className="footerText">
+            No account yet? <Link to="/register">Register</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
